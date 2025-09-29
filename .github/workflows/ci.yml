@@ -24,7 +24,7 @@ jobs:
 
       - name: Build with Gradle Wrapper (server)
         working-directory: server
-        run: chmod +x ./gradlew build --no-daemon --stacktrace
+        run: ./gradlew build --no-daemon --stacktrace
 
   dependency-submission:
 
@@ -49,5 +49,3 @@ jobs:
         # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
         # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
         uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-
-
