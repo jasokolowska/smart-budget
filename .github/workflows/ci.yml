@@ -32,10 +32,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle
 
-      - name: Ensure server/gradlew is executable (if present)
-        run: |
-          if [ -f server/gradlew ]; then chmod +x server/gradlew; else echo "server/gradlew not found, will attempt to run gradle from PATH"; fi
-
       - name: Build with Gradle Wrapper (server)
         working-directory: server
         run: ./gradlew build --no-daemon --stacktrace
@@ -54,7 +50,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Generate and submit dependency graph (server)
+      - name: Generate and submit dependency graph
         # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
         # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
         uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+        working-directory: server
+
+
