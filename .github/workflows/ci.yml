@@ -24,7 +24,7 @@ jobs:
 
       - name: Build with Gradle Wrapper (server)
         working-directory: server
-        run: ./gradlew build --no-daemon --stacktrace
+        run: chmod +x ./gradlew build --no-daemon --stacktrace
 
   dependency-submission:
 
