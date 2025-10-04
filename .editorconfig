@@ -1,0 +1,24 @@
+# EditorConfig helps maintain consistent coding styles between editors and IDEs
+# https://editorconfig.org
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Files that need a different indent size
+[*.gradle]
+indent_size = 2
+
+# Common web / config files — prefer 2-space indentation
+[*.{xml,yml,yaml,js,jsx,ts,tsx,css,scss,html,json}]
+indent_size = 2
+
+# Markdown files: preserve trailing whitespace (useful for tables)
+[*.md]
+trim_trailing_whitespace = false
