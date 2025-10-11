@@ -1,0 +1,29 @@
+# Repository-level .gitattributes to normalize line endings and mark binaries
+# This file applies to the whole repository. Place at repository root.
+# See: https://git-scm.com/docs/gitattributes
+
+# Set default behavior to automatically normalize text files
+* text=auto
+
+# Explicitly set line endings for common script types
+# Use LF for shell scripts and the gradle wrapper
+/*.sh    text eol=lf
+/gradlew text eol=lf
+
+# Use CRLF for Windows batch files
+*.bat   text eol=crlf
+
+# Mark common binary types so Git won't try to normalize them
+*.jar   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.zip   binary
+*.gz    binary
+
+# Optional: ignore normalization for build/IDE output on archive/export
+.gradle/ export-ignore
+build/  export-ignore
+
