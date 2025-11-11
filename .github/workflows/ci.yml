@@ -13,6 +13,21 @@ jobs:
     permissions:
       contents: read
 
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +40,10 @@ jobs:
       - name: Build with Gradle Wrapper (server)
         working-directory: server
         run: ./gradlew build --no-daemon --stacktrace
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/testdb
+          SPRING_DATASOURCE_USERNAME: testuser
+          SPRING_DATASOURCE_PASSWORD: testpass
 
   dependency-submission:
 
