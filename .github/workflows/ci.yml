@@ -14,10 +14,10 @@ jobs:
       contents: read
 
     env:
-      DB_USERNAME: ${{ variables.DB_USERNAME }}
+      DB_USERNAME: ${{ vars.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ variables.DB_NAME }}
-      DB_PORT: ${{ variables.DB_PORT }}
+      DB_NAME: ${{ vars.DB_NAME }}
+      DB_PORT: ${{ vars.DB_PORT }}
 
     services:
       postgres:
