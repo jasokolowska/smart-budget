@@ -37,6 +37,15 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Print DB env variables
+        run: |
+          echo "DB_USERNAME=$DB_USERNAME"
+          echo "DB_NAME=$DB_NAME"
+        env:
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+
+
       - name: Build with Gradle Wrapper (server)
         working-directory: server
         env:
