@@ -8,4 +8,9 @@ import org.springframework.stereotype.Repository
 @Repository
 interface CategoryRepository : JpaRepository<CategoryEntity, UUID> {
   fun findByUserId(userId: UUID): List<CategoryEntity>
+
+  fun findByIdAndUserId(
+    id: UUID,
+    userId: UUID,
+  ): CategoryEntity?
 }

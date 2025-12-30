@@ -47,4 +47,13 @@ class CategoryService(
 
     return categoryRepository.save(category).toDto()
   }
+
+  fun deleteCategory(
+    id: UUID,
+    userId: UUID,
+  ) =
+    categoryRepository.findByIdAndUserId(id, userId)?.let { categoryRepository.delete(it) }
+      ?: throw EntityNotFoundException(
+        "Category with id" + " $id not found",
+      )
 }

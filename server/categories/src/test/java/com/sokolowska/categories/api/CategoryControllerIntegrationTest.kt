@@ -10,14 +10,17 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.web.client.TestRestTemplate
+import org.springframework.boot.resttestclient.TestRestTemplate
+import org.springframework.boot.resttestclient.autoconfigure.TestRestTemplateAutoConfiguration
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.context.annotation.Import
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 
+@Import(TestRestTemplateAutoConfiguration::class)
 class CategoryControllerIntegrationTest : BaseIntegrationTest() {
   @Autowired private lateinit var restTemplate: TestRestTemplate
 
@@ -98,7 +101,7 @@ class CategoryControllerIntegrationTest : BaseIntegrationTest() {
     // when
     val response =
       restTemplate.exchange(
-        "${baseUrl()}/$categoryId",
+        "${baseUrl()}/$categoryId?userId=$userId",
         HttpMethod.DELETE,
         null,
         Void::class.java,

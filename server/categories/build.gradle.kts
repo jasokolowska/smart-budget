@@ -1,7 +1,9 @@
 plugins {
-  id("org.springframework.boot") version "3.5.7" apply false
+  id("org.springframework.boot") version "4.0.1" apply false
   id("io.spring.dependency-management") version "1.1.7"
-  kotlin("jvm") version "1.9.22"
+  kotlin("jvm") version "2.2.21"
+  kotlin("plugin.spring") version "2.2.21"
+  kotlin("plugin.jpa") version "2.2.21"
 }
 
 group = "org.sokolowska"
@@ -19,35 +21,48 @@ dependencyManagement {
 }
 
 dependencies {
-  implementation("org.springframework.boot:spring-boot-starter-web")
+  implementation("org.springframework.boot:spring-boot-starter-webmvc")
+  //  implementation("org.springframework.boot:spring-boot-starter-web")
+  implementation("org.jetbrains.kotlin:kotlin-reflect")
+  implementation("tools.jackson.module:jackson-module-kotlin")
 
-  //    Serialization
-  implementation("com.fasterxml.jackson.module:jackson-module-parameter-names")
-  implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
-  implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-
-  //    Mapper
-  implementation("org.mapstruct:mapstruct:1.6.3")
-  annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
-
-  //    Tests
-  testImplementation("org.springframework.boot:spring-boot-starter-test")
-  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-  testImplementation("org.springframework.boot:spring-boot-testcontainers")
-  testImplementation("org.testcontainers:postgresql")
-  testImplementation("org.testcontainers:junit-jupiter")
-
-  //    Database
+  // Db
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-  implementation("org.flywaydb:flyway-core")
+  implementation("org.springframework.boot:spring-boot-starter-flyway")
   implementation("org.flywaydb:flyway-database-postgresql")
   runtimeOnly("org.postgresql:postgresql")
 
-  implementation(kotlin("stdlib-jdk8"))
+  // Tests
+  testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
+  testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
+  testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+  testImplementation("org.springframework.boot:spring-boot-restclient")
+  testImplementation("org.springframework.boot:spring-boot-starter-test")
+  testImplementation("org.springframework.boot:spring-boot-testcontainers")
+  testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+  testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+  testImplementation("org.testcontainers:testcontainers-postgresql")
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+  // Mapper
+  implementation("org.mapstruct:mapstruct:1.6.3")
+  annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
+
+  // Others
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
 }
 
-tasks.withType<Test> { useJUnitPlatform() }
+kotlin {
+  compilerOptions {
+    freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+  }
+}
 
-tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-parameters") }
+allOpen {
+  annotation("jakarta.persistence.Entity")
+  annotation("jakarta.persistence.MappedSuperclass")
+  annotation("jakarta.persistence.Embeddable")
+}
+
+tasks.withType<Test> { useJUnitPlatform() }
