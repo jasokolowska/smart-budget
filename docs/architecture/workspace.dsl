@@ -1,7 +1,7 @@
 workspace {
 
-    name "Budget System – C4"
-    description "Aplikacja do zarządzania budżetem domowym."
+    name "Budget System – C4 (MVP)"
+    description "Aplikacja do zarządzania budżetem domowym - wersja MVP zgodna z PRD."
 
     ############################################################
     #                       MODEL                              #
@@ -22,96 +22,55 @@ workspace {
             tags "External"
         }
 
-        externalIntegrations = softwareSystem "External Integrations" {
-            description "Zewnętrzne systemy wysyłające dane przez webhook (Make.com, banki, inne automatyzacje)."
-            tags "External"
-        }
-
         emailService = softwareSystem "Email Service" {
-            description "Zewnętrzny serwis do wysyłania powiadomień email (np. SendGrid, SMTP)."
+            description "Zewnętrzny serwis do wysyłania powiadomień email (Amazon SES lub Mailpit)."
             tags "External"
         }
 
         system = softwareSystem "Budget System" {
-            description "Zestaw mikroserwisów umożliwiających import transakcji, obliczanie budżetu, zarządzanie wydatkami cyklicznymi i wysyłanie powiadomień."
+            description "Modularny monolit umożliwiający import transakcji, obliczanie budżetu, zarządzanie wydatkami cyklicznymi i wysyłanie powiadomień."
 
             webApp = container "Frontend Angular" {
-                technology "Angular 17, Standalone Components, PWA"
-                description "Aplikacja uruchamiana w przeglądarce. Autoryzuje się tokenem JWT, obsługuje offline-mode przez IndexedDB."
+                technology "Angular 18, Standalone Components, Signals"
+                description "Aplikacja uruchamiana w przeglądarce. Autoryzuje się tokenem JWT, komunikuje się z backend przez API Gateway."
             }
 
             gateway = container "API Gateway" {
-                technology "Spring Cloud Gateway"
-                description "Jedyny publiczny punkt wejścia HTTP. Weryfikuje tokeny, routing, rate limiting, proxy dla OpenAI API z cache 24h."
+                technology "Spring Cloud Gateway 4.x"
+                description "Jedyny publiczny punkt wejścia HTTP. Weryfikuje tokeny JWT, routing do modułów backend, rate limiting."
             }
 
-            transactionSvc = container "Transaction Service" {
-                technology "Spring Boot 3.3, Kotlin, WebFlux"
-                description "Import CSV, ręczny CRUD transakcji, ATM-flow dla wypłat gotówkowych, publikowanie zdarzeń."
+            backend = container "Backend Application" {
+                technology "Spring Boot 3.4, Kotlin 2.2.20, Spring Modulith 1.4.x"
+                description "Modularny monolit zawierający: Transaction Module (import CSV, CRUD, ATM-flow), Budget Module (limity, AI-generowanie, wydatki cykliczne), Notification Module (preferencje, wysyłka alertów)."
             }
 
-            budgetSvc = container "Budget Service" {
-                technology "Ktor (lekki serwis Kotlin)"
-                description "Miesięczne limity, procent wykorzystania, wydatki cykliczne, AI-generowanie budżetu."
-            }
-
-            notificationSvc = container "Notification Service" {
-                technology "Spring Boot, Coroutine listener"
-                description "Zarządzanie preferencji powiadomień (HTTP) + event-driven wysyłanie alertów (AMQP)."
-            }
-
-            broker = container "RabbitMQ" {
-                technology "RabbitMQ (AMQP 0-9-1)"
-                description "Broker zdarzeń asynchronicznych, buforuje komunikaty między mikroserwisami."
-            }
-
-            transactions = container "Transactions DB" {
+            database = container "PostgreSQL Database" {
                 technology "PostgreSQL 16"
-                description "Schemat przechowujący wszystkie transakcje użytkowników."
-            }
-
-            budgets = container "Budgets DB" {
-                technology "PostgreSQL 16"
-                description "Limity budżetowe, wydatki cykliczne, historia wykorzystania, preferencje użytkowników."
+                description "Jedna baza danych z osobnymi schematami: transactions (wszystkie transakcje), budgets (limity, wydatki cykliczne, preferencje powiadomień)."
             }
 
             ########################################################
-            #                RELACJE WEWNĄTRZ SYSTEMU             #
+            #                RELACJE WEWNĄTRZ SYSTEMU              #
             ########################################################
 
             # User interactions
             user -> webApp "Korzysta przez przeglądarkę" "HTTPS"
+            webApp -> keycloak "OAuth flow - redirect do logowania" "HTTPS (OpenID Connect)"
 
             # Frontend to Gateway
-            webApp -> gateway "Wysyła żądania API (token JWT)" "HTTPS"
+            webApp -> gateway "Wysyła żądania API (token JWT)" "HTTPS/JSON"
 
-            # External systems
-            externalIntegrations -> gateway "Wysyłają dane przez webhook" "HTTPS POST"
+            # Gateway
             gateway -> keycloak "Waliduje podpis tokenu" "OIDC Discovery (HTTPS)"
-            gateway -> gpt "Proxy dla AI requests + cache" "HTTPS/OpenAI API"
-            notificationSvc -> emailService "Wysyła powiadomienia email" "SMTP/HTTPS"
+            gateway -> backend "Trasuje żądania do modułów" "HTTP"
 
-            # Gateway routing
-            gateway -> transactionSvc "Trasuje /api/transactions/*" "HTTP"
-            gateway -> budgetSvc "Trasuje /api/budgets/*, /api/recurring/*" "HTTP"
-            gateway -> notificationSvc "Trasuje /api/notifications/*" "HTTP"
-
-            # Database connections
-            transactionSvc -> transactions "Czyta i zapisuje transakcje" "SQL (5432)"
-            budgetSvc -> budgets "Czyta i zapisuje limity, wydatki cykliczne, preferencje" "SQL (5432)"
-            notificationSvc -> budgets "Czyta preferencje powiadomień użytkowników" "SQL (5432)"
-
-            # Event-driven communication
-            transactionSvc -> broker "Publikuje TRANSACTION_CREATED, ATM_WITHDRAWAL_DETECTED" "AMQP"
-            budgetSvc -> broker "Subskrybuje transakcje + publikuje BUDGET_LIMIT_EXCEEDED, RECURRING_DUE" "AMQP"
-            notificationSvc -> broker "Subskrybuje wszystkie zdarzenia powiadomień" "AMQP"
+            # Backend dependencies
+            backend -> database "Czyta i zapisuje transakcje, budżety, preferencje" "JDBC/SQL (5432)"
+            backend -> gpt "Wysyła zapytania o propozycje budżetu (cache 24h)" "HTTPS/OpenAI API"
+            backend -> emailService "Wysyła powiadomienia email" "SMTP/HTTPS"
+            backend -> webApp "Wysyła powiadomienia web push" "Web Push API (VAPID)"
         }
-
-        ########################################################
-        #                RELACJE ZEWNĘTRZNE                    #
-        ########################################################
-
-        webApp -> keycloak "OAuth flow - redirect do logowania" "HTTPS"
     }
 
     ############################################################
@@ -122,13 +81,15 @@ workspace {
         systemContext system "context" {
             include *
             autolayout lr
-            title "Budget System – Kontext"
+            title "Budget System – Kontekst (MVP)"
+            description "Użytkownik autoryzuje się przez Keycloak, aplikacja importuje dane, generuje budżet z pomocą AI i wysyła powiadomienia."
         }
 
         container system "containers" {
             include *
             autolayout tb
-            title "Budget System – Diagram kontenerów"
+            title "Budget System – Diagram kontenerów (MVP)"
+            description "Modularny monolit z jedną bazą PostgreSQL, frontend Angular i API Gateway weryfikujący JWT."
         }
 
         styles {
@@ -152,6 +113,8 @@ workspace {
                 color "#ffffff"
             }
         }
+
+        theme default
     }
 
     configuration {
