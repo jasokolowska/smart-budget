@@ -1,280 +1,137 @@
-# Happy Paths - User Stories dla Ticketów
+# User Stories and Acceptance Scenarios
 
-## 🔐 **Autoryzacja i Uwierzytelnianie**
+Status: **approved baseline**. Stories describe product behavior inside one modular application, not an API Gateway, message broker, or independent service.
 
-### HP-001: Logowanie użytkownika
-**Jako** użytkownik  
-**Chcę** zalogować się do aplikacji  
-**Aby** móc zarządzać swoim budżetem  
+## M1: secure budgeting workflow
 
-**Ścieżka:**
-1. User otwiera WebApp
-2. WebApp wykrywa brak tokenu JWT
-3. User klika "Zaloguj się"
-4. WebApp przekierowuje do Keycloak (OAuth)
-5. User loguje się w Keycloak
-6. Keycloak zwraca kod autoryzacyjny do WebApp
-7. WebApp otrzymuje JWT token
-8. WebApp zapisuje token i przekierowuje do dashboardu
+### US-001: Authenticate as a personal budget owner
 
-### HP-002: Weryfikacja tokenu
-**Jako** system  
-**Chcę** weryfikować każde żądanie API  
-**Aby** zapewnić bezpieczeństwo danych  
+**As** a budget owner, **I want** to authenticate using an existing Keycloak account, **so that** only my financial records are accessible.
 
-**Ścieżka:**
-1. WebApp wysyła żądanie z JWT tokenem do API Gateway
-2. API Gateway weryfikuje podpis tokenu w Keycloak
-3. Keycloak potwierdza ważność tokenu
-4. API Gateway przekazuje żądanie do odpowiedniego serwisu
+Acceptance:
 
----
+1. The local demo includes two preconfigured owners.
+2. A validated OIDC token establishes the owner identity.
+3. Missing or invalid authentication is rejected.
+4. Public self-registration is not required.
 
-## 📥 **Import i Dodawanie Transakcji**
+### US-002: Create and list personal categories
 
-### HP-003: Ręczny upload CSV
-**Jako** użytkownik  
-**Chcę** wgrać plik CSV z transakcjami  
-**Aby** szybko zaimportować dane z banku  
+**As** an authenticated owner, **I want** to create a named expense category, **so that** spending can be grouped.
 
-**Ścieżka:**
-1. User wybiera plik CSV w WebApp
-2. WebApp wysyła plik do API Gateway
-3. API Gateway przekazuje do Transaction Service
-4. Transaction Service parsuje CSV i kategoryzuje transakcje
-5. Transaction Service zapisuje dane do Transactions DB
-6. Transaction Service publikuje TRANSACTION_CREATED do RabbitMQ
-7. WebApp wyświetla potwierdzenie i listę zaimportowanych transakcji
+Acceptance:
 
-### HP-004: Webhook import (automatyzacja)
-**Jako** system automatyzacji  
-**Chcę** wysłać dane transakcji przez webhook  
-**Aby** automatycznie importować dane do budżetu  
+1. Category name is trimmed before storing.
+2. Names are unique case-insensitively per owner.
+3. Different owners may use the same name.
+4. Only the authenticated owner sees their categories.
 
-**Ścieżka:**
-1. External Integration (np. Make.com) wysyła POST z danymi CSV
-2. API Gateway weryfikuje webhook signature
-3. API Gateway przekazuje dane do Transaction Service
-4. Transaction Service przetwarza i zapisuje transakcje
-5. Transaction Service publikuje TRANSACTION_CREATED do RabbitMQ
-6. System zwraca status 200 OK
+### US-003: Set an optional overall monthly plan
 
-### HP-005: Ręczne dodanie transakcji
-**Jako** użytkownik  
-**Chcę** dodać transakcję ręcznie  
-**Aby** uzupełnić brakujące wydatki  
+**As** an owner, **I want** to enter an overall monthly spending target, **so that** I can compare all expenses with my plan.
 
-**Ścieżka:**
-1. User wypełnia formularz transakcji w WebApp
-2. WebApp wysyła dane do API Gateway → Transaction Service
-3. Transaction Service waliduje i zapisuje transakcję
-4. Transaction Service publikuje TRANSACTION_CREATED
-5. WebApp wyświetla potwierdenie i odświeża listę
+Acceptance:
 
-### HP-006: ATM Flow - kategoryzacja wypłat
-**Jako** użytkownik  
-**Chcę** sklasyfikować wypłatę z bankomatu  
-**Aby** dokładnie śledzić na co wydałem gotówkę  
+1. Setting the amount creates the monthly budget if necessary.
+2. The month can be historical, current, or future.
+3. The overall amount is optional.
+4. Lowering the amount does not alter category limits.
+5. Planning discrepancies are displayed but do not block saves.
 
-**Ścieżka:**
-1. Transaction Service wykrywa wypłatę z bankomatu w CSV
-2. Transaction Service publikuje ATM_WITHDRAWAL_DETECTED
-3. WebApp wyświetla modal z pytaniem o kategorię
-4. User wybiera kategorię i opcjonalnie dzieli kwotę
-5. WebApp wysyła aktualizację do Transaction Service
-6. Transaction Service aktualizuje transakcję i publikuje event
+### US-004: Configure category-level monthly limits
 
----
+**As** an owner, **I want** to assign a monthly amount to a category, **so that** I can plan category spending.
 
-## 💰 **Zarządzanie Budżetem**
+Acceptance:
 
-### HP-007: Generowanie budżetu AI
-**Jako** użytkownik  
-**Chcę** wygenerować budżet przy pomocy AI  
-**Aby** otrzymać inteligentne propozycje limitów  
+1. Setting a first category limit creates the budget month if necessary.
+2. A category has at most one limit per owner and month.
+3. Setting it again updates the existing amount.
+4. Owner B's category cannot be used.
+5. Category allocations exceeding an overall limit are accepted and generate a warning.
 
-**Ścieżka:**
-1. User klika "Generuj budżet AI" w WebApp
-2. WebApp wysyła żądanie do API Gateway → Budget Service
-3. Budget Service pobiera historię transakcji z ostatnich 3 miesięcy
-4. Budget Service wysyła zapytanie przez API Gateway do OpenAI GPT-4o
-5. API Gateway cache'uje odpowiedź na 24h i zwraca propozycje
-6. Budget Service przetwarza odpowiedź AI i przygotowuje budżet
-7. WebApp wyświetla propozycje budżetu do akceptacji
+### US-005: Record an actual expense
 
-### HP-008: Edycja i zapis budżetu
-**Jako** użytkownik  
-**Chcę** edytować zaproponowany budżet  
-**Aby** dostosować limity do moich potrzeb  
+**As** an owner, **I want** to record an actual expense, **so that** my monthly spending reflects reality.
 
-**Ścieżka:**
-1. User modyfikuje limity kategorii w WebApp
-2. WebApp wysyła aktualizacje do API Gateway → Budget Service
-3. Budget Service waliduje i zapisuje budżet do Budgets DB
-4. Budget Service publikuje BUDGET_UPDATED
-5. WebApp wyświetla potwierdzenie i odświeża widok budżetu
+Acceptance:
 
-### HP-009: Monitorowanie wykorzystania budżetu
-**Jako** użytkownik  
-**Chcę** widzieć aktualne wykorzystanie budżetu  
-**Aby** kontrolować swoje wydatki  
+1. Amount is positive and expressed in PLN.
+2. Actual incurred date and owner-owned category are required.
+3. Description is optional.
+4. Future incurred dates are rejected.
+5. Category limits are optional.
+6. Actual overspending never blocks the expense.
+7. The date incurred determines the selected budget month.
 
-**Ścieżka:**
-1. Budget Service subskrybuje TRANSACTION_CREATED z RabbitMQ
-2. Budget Service przelicza wykorzystanie budżetu
-3. Budget Service aktualizuje procenty w Budgets DB
-4. Jeśli limit przekroczony - publikuje BUDGET_LIMIT_EXCEEDED
-5. WebApp odświeża progress bary w czasie rzeczywistym
+### US-006: Inspect a paginated monthly expense list
 
----
+**As** an owner, **I want** to inspect expenses for a selected month, **so that** I can understand the transactions behind a summary.
 
-## 🔄 **Wydatki Cykliczne**
+Acceptance:
 
-### HP-010: Dodanie wydatku cyklicznego
-**Jako** użytkownik  
-**Chcę** dodać wydatek cykliczny (np. czynsz)  
-**Aby** system przypominał mi o płatnościach  
+1. Results include incurred date, category, amount, and optional description.
+2. Filtering by category is optional.
+3. Results default to 20 rows per page and never exceed 100.
+4. The latest incurred expense appears first.
+5. Another owner's records cannot appear in results.
 
-**Ścieżka:**
-1. User wypełnia formularz wydatku cyklicznego w WebApp
-2. WebApp wysyła dane do API Gateway → Budget Service
-3. Budget Service zapisuje definicję cykliczną do Budgets DB
-4. Budget Service planuje następny termin płatności
-5. WebApp wyświetla potwierdrzenie i listę cyklicznych
+### US-007: Review category and overall monthly totals
 
-### HP-011: Przypomnienie o płatności cyklicznej
-**Jako** system  
-**Chcę** przypomnieć o nadchodzącej płatności  
-**Aby** użytkownik nie zapomniał o opłacie  
+**As** an owner, **I want** to view category-level and overall monthly spending, **so that** I understand available funds and planning inconsistencies.
 
-**Ścieżka:**
-1. Budget Service (scheduler) wykrywa zbliżający się termin
-2. Budget Service publikuje RECURRING_DUE do RabbitMQ
-3. Notification Service odbiera event
-4. Notification Service wysyła powiadomienie do Email Service
-5. User otrzymuje email z przypomnieniem
+Acceptance:
 
-### HP-012: Oznaczenie płatności jako zapłacona
-**Jako** użytkownik  
-**Chcę** oznaczyć cykliczną płatność jako zapłaconą  
-**Aby** system zaplanował następny termin  
+1. Overall spending includes all categories, including categories without limits.
+2. A category with a limit and no expenses appears with zero spent.
+3. A category with expenses and no limit shows an absent limit rather than zero.
+4. Category and overall remaining values may be negative.
+5. Overall allocation, unallocated amount, and over-allocation are shown when an overall limit exists.
+6. Warnings remain informative and never reject a write.
 
-**Ścieżka:**
-1. User klika "Zapłacone" przy cyklicznej płatności
-2. WebApp wysyła żądanie do API Gateway → Budget Service  
-3. Budget Service oznacza jako zapłacone i planuje następny termin
-4. Budget Service publikuje RECURRING_PAID
-5. WebApp usuwa z listy "do zapłaty" i wyświetla następny termin
+### US-008: Prevent cross-owner data access
 
----
+**As** an owner, **I want** my financial data isolated from other accounts, **so that** no other user can inspect or manipulate it.
 
-## 🔔 **Powiadomienia**
+Acceptance:
 
-### HP-013: Konfiguracja preferencji powiadomień
-**Jako** użytkownik  
-**Chcę** ustawić preferencje powiadomień  
-**Aby** otrzymywać tylko interesujące mnie alerty  
+1. Owner B cannot view Owner A's categories, budgets, limits, expenses, or summaries.
+2. Owner B cannot attach an expense or limit to Owner A's category.
+3. No client-provided owner identifier can impersonate another owner.
+4. Automated integration tests use both configured owners.
 
-**Ścieżka:**
-1. User otwiera ustawienia powiadomień w WebApp
-2. WebApp pobiera aktualne preferencje z API Gateway → Notification Service
-3. Notification Service czyta ustawienia z Budgets DB
-4. User modyfikuje preferencje (email on/off, typy alertów)
-5. WebApp zapisuje zmiany przez Notification Service do Budgets DB
+## M1 end-to-end acceptance scenario
 
-### HP-014: Wysyłanie alertu o przekroczeniu budżetu
-**Jako** system  
-**Chcę** powiadomić użytkownika o przekroczeniu limitu  
-**Aby** mógł reagować na nadmierne wydatki  
+1. Owner A authenticates and creates `Food`, `Clothing`, and `Transport`.
+2. Owner A sets an August overall spending plan of 5,000 PLN.
+3. Owner A sets Food to 3,000 PLN and Clothing to 3,000 PLN.
+4. The response exposes a 1,000 PLN over-allocation warning without rejecting either category limit.
+5. Owner A records a 150 PLN Food expense and a 200 PLN Transport expense without a category limit.
+6. August overall spending equals 350 PLN and overall remaining equals 4,650 PLN.
+7. Food shows 150 PLN spent and 2,850 PLN remaining.
+8. Clothing shows zero spent and 3,000 PLN remaining.
+9. Transport shows 200 PLN spent and an absent/null limit.
+10. Owner A lists August expenses and optionally filters Food.
+11. Owner B cannot view or reuse Owner A's data.
 
-**Ścieżka:**
-1. Budget Service wykrywa przekroczenie limitu
-2. Budget Service publikuje BUDGET_LIMIT_EXCEEDED
-3. Notification Service odbiera event z RabbitMQ
-4. Notification Service sprawdza preferencje użytkownika w Budgets DB
-5. Jeśli email włączony - wysyła powiadomienie przez Email Service
-6. User otrzymuje alert email
+## M2 stories
 
----
+- Rename an owned category without changing its identity or history.
+- Archive an owned category without deleting historical expenses.
+- Create two-level categories, e.g. `Car -> Fuel / Insurance / Repairs`.
+- Assign an expense directly to `Car` or to one of its subcategories.
+- View parent totals aggregating direct and child expenses.
+- Configure parent and child advisory limits; show allocation discrepancies.
+- Correct or delete an owned expense and recalculate affected summaries.
+- Record monthly income and a separate manually entered opening balance.
+- Explicitly copy category limits to another month.
 
-## 📊 **Przeglądanie Danych**
+## Stories for later milestones
 
-### HP-015: Przeglądanie listy transakcji
-**Jako** użytkownik  
-**Chcę** przeglądać swoje transakcje  
-**Aby** analizować wydatki  
-
-**Ścieżka:**
-1. User otwiera listę transakcji w WebApp
-2. WebApp wysyła żądanie do API Gateway → Transaction Service
-3. Transaction Service pobiera dane z Transactions DB
-4. Transaction Service zwraca przefiltrowane transakcje
-5. WebApp wyświetla listę z opcjami filtrowania
-
-### HP-016: Dashboard - przegląd stanu budżetu
-**Jako** użytkownik  
-**Chcę** widzieć szybki przegląd mojego budżetu  
-**Aby** kontrolować finanse jednym rzutem oka  
-
-**Ścieżka:**
-1. User otwiera dashboard w WebApp
-2. WebApp pobiera dane z API Gateway → Budget Service
-3. Budget Service zwraca:
-   - Aktualne saldo
-   - Wykorzystanie budżetu per kategoria
-   - Nadchodzące płatności cykliczne
-4. WebApp wyświetla dashboard z progress barami i alertami
-
----
-
-## 🔄 **Offline/PWA**
-
-### HP-017: Praca offline
-**Jako** użytkownik  
-**Chcę** dodawać transakcje bez internetu  
-**Aby** nie tracić danych gdy jestem offline  
-
-**Ścieżka:**
-1. User traci połączenie internetowe
-2. WebApp wykrywa offline i przełącza na tryb lokalny
-3. User dodaje transakcje - WebApp zapisuje w IndexedDB
-4. Po powrocie online WebApp synchronizuje dane z API
-5. Transaction Service przetwarza zbiorczo offline transakcje
-
----
-
-## 📈 **Rozbudowa (Nice-to-have)**
-
-### HP-018: Eksport danych
-**Jako** użytkownik  
-**Chcę** wyeksportować swoje dane  
-**Aby** analizować je w zewnętrznych narzędziach  
-
-### HP-019: Współdzielenie budżetu
-**Jako** użytkownik  
-**Chcę** współdzielić budżet z partnerem  
-**Aby** wspólnie zarządzać finansami  
-
-### HP-020: Analityka i wykresy
-**Jako** użytkownik  
-**Chcę** widzieć wykresy wydatków  
-**Aby** lepiej zrozumieć swoje nawyki finansowe  
-
----
-
-## 🏷️ **Tagowanie Ticketów**
-
-### Komponenty:
-- `[FE]` - Frontend Angular
-- `[API-GW]` - API Gateway  
-- `[TX-SVC]` - Transaction Service
-- `[BUD-SVC]` - Budget Service
-- `[NOT-SVC]` - Notification Service
-- `[AUTH]` - Autoryzacja/Keycloak
-- `[DB]` - Baza danych
-- `[MSG]` - RabbitMQ/Events
-
-### Priorytety MVP:
-- **P0** - Krytyczne dla MVP (HP-001 do HP-016)
-- **P1** - Ważne dla MVP (HP-017)
-- **P2** - Nice-to-have (HP-018+)
+- **M3:** deploy the backend to AWS using Terraform and cost-aware observability.
+- **M4:** use an Angular UI for authentication, budgets, categories, expenses, and summaries.
+- **M5:** upload a CSV and review successfully imported and rejected rows.
+- **M6:** manage repeating obligations and periodic costs such as annual car insurance.
+- **M7:** review AI-suggested categories for imported transactions.
+- **M8:** review, edit, accept, or reject an explainable AI-proposed budget.
+- **M9:** introduce notifications, event-driven processing, or a separate service only when evidence supports it.

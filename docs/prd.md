@@ -1,123 +1,104 @@
-# Dokument wymagań produktu (PRD) - Smart Budget
+# Product Requirements Document: Smart Budget
 
-## 1. Przegląd produktu
-Smart Budget to aplikacja webowa wspierająca rodziny w Polsce w planowaniu miesięcznego budżetu domowego. System wykorzystuje sztuczną inteligencję do analizy historii transakcji, sezonowości oraz wydatków cyklicznych, aby zaproponować realistyczne limity budżetowe. Celem jest uproszczenie procesu, który dotychczas odbywał się głównie w Excelu, bez inteligentnych wskazówek. Produkt w wersji MVP dostarcza kluczowe funkcjonalności: import wydatków z plików CSV, ręczne dodawanie transakcji, wsparcie AI w generowaniu budżetu, dashboard z przeglądem salda i płatności, a także powiadomienia o przekroczeniach limitów i terminach.
+Status: **approved product baseline**. Supersedes microservice-era material stored under `docs/archive/`.
 
-## 2. Problem użytkownika
-Planowanie budżetu domowego jest często frustrujące, ponieważ:
-- Zakładane kwoty w kategoriach są zbyt niskie, co prowadzi do przekroczeń i zniechęcenia.
-- Użytkownicy korzystają z Excela, który nie oferuje inteligentnych wskazówek ani automatyzacji.
-- Brakuje wsparcia w uwzględnianiu wydatków cyklicznych i sezonowych.
-Smart Budget rozwiązuje ten problem, wspierając użytkowników w tworzeniu realistycznych budżetów i monitorowaniu ich realizacji w czasie rzeczywistym.
+## Product vision
 
-## 3. Wymagania funkcjonalne
-1. Autoryzacja i uwierzytelnianie:
-   - Logowanie przez Keycloak (lokalne konta).
-   - Weryfikacja tokenów JWT w API Gateway.
-2. Import i dodawanie transakcji:
-   - Ręczny upload plików CSV (`date,amount,description[,category]`, separator „,”).
-   - Automatyczne kategoryzowanie transakcji (85% skuteczności).
-   - Obsługa wypłat z bankomatu poprzez ATM-flow (split do grosza).
-   - Ręczne dodawanie transakcji jednorazowych i cyklicznych.
-3. Budżet:
-   - Generowanie propozycji budżetu AI dla kolejnego miesiąca (jednorazowo).
-   - Kategorie dynamiczne, limit 30 (nadmiarowe grupowane przez AI).
-   - Sanity-check: odchylenie >30% od mediany 3m wymaga potwierdzenia.
-   - Edycja i zapis budżetu.
-4. Dashboard:
-   - Saldo bieżące.
-   - Wykorzystanie budżetu per kategoria.
-   - Nadchodzące płatności cykliczne (7 dni) z możliwością oznaczenia jako „Zapłacone”.
-   - Ostatnie 5 transakcji (z ikoną dla oszczędności).
-5. Wydatki cykliczne:
-   - Dodawanie i zarządzanie cyklicznymi płatnościami.
-   - Powiadomienia −3 dni i w dniu płatności (drugi anulowany po „Zapłacone”).
-   - Możliwość korekty kwoty/opisu.
-6. Powiadomienia:
-   - Kanały: web push i email.
-   - Globalne preferencje użytkownika z możliwością wyłączenia wszystkich.
-7. Przeglądanie danych:
-   - Lista transakcji z filtrowaniem (zakres dat + multi-select kategorii OR).
-8. Audyt:
-   - W tabeli budżetu przechowywane `lastModifiedAt` i `lastModifiedBy`.
+Enable an individual to plan a monthly spending budget, record actual expenses, understand overspending without hiding reality, and progressively automate routine financial work.
 
-## 4. Granice produktu
-- Poza zakresem MVP: webhook import (Make.com), tryb Gość, PWA offline, zaawansowana analityka i wykresy, eksport CSV/PDF, multi-currency, współdzielone konta, dedykowane aplikacje mobilne.
-- Brak KPI biznesowych – jedynie cele techniczne i jakościowe.
-- AI wspiera jedynie generowanie budżetu na kolejny miesiąc (jedno wywołanie). Kolejne edycje wykonywane są ręcznie.
-- System nie przechowuje szczegółowej historii audytowej (tylko ostatnia modyfikacja).
+The product also demonstrates practical Kotlin/Spring backend engineering, explicit domain boundaries, secure owner isolation, maintainable delivery, AWS infrastructure, and later applied AI.
 
-## 5. Historyjki użytkowników
+## Primary user
 
-### Autoryzacja
-- US-001: Logowanie użytkownika  
-  Jako użytkownik chcę zalogować się do aplikacji, aby móc zarządzać swoim budżetem.  
-  Kryteria akceptacji: użytkownik może zalogować się przez Keycloak, otrzymuje JWT, dostęp do dashboardu.
+An authenticated individual managing a personal budget. The first version is not a multi-person household account.
 
-- US-002: Weryfikacja tokenu  
-  Jako system chcę weryfikować każde żądanie API, aby zapewnić bezpieczeństwo danych.  
-  Kryteria akceptacji: każde żądanie jest sprawdzane, żądania z niepoprawnym tokenem są odrzucane.
+Typical questions:
 
-### Import i transakcje
-- US-003: Ręczny upload CSV  
-  Jako użytkownik chcę wgrać plik CSV z transakcjami, aby szybko zaimportować dane.  
-  Kryteria akceptacji: plik wczytany, transakcje zapisane, brak kategorii → „Nieprzypisana”.
+- How much can I spend this month?
+- How much have I assigned to particular categories?
+- What did I actually spend, and where?
+- Am I over my overall plan or a category plan?
+- Which regular or seasonal costs should influence future budgets?
 
-- US-005: Ręczne dodanie transakcji  
-  Jako użytkownik chcę dodać transakcję ręcznie, aby uzupełnić brakujące dane.  
-  Kryteria akceptacji: transakcja zapisana, wyświetlona na liście.
+## Milestone M1: secure budgeting vertical slice
 
-- US-006: ATM Flow  
-  Jako użytkownik chcę sklasyfikować wypłatę z bankomatu, aby dokładnie śledzić gotówkę.  
-  Kryteria akceptacji: system wykrywa wypłatę, pyta o kategorię, umożliwia split do grosza.
+An owner can:
 
-### Budżet
-- US-007: Generowanie budżetu AI  
-  Jako użytkownik chcę wygenerować budżet przy pomocy AI, aby otrzymać propozycje limitów.  
-  Kryteria akceptacji: AI zwraca kategorie ≤30 z limitami i krótkim uzasadnieniem.
+1. Authenticate through Keycloak/OIDC and use the documented OpenAPI.
+2. Create and list personal expense categories.
+3. Plan any past or future month by setting an optional overall monthly limit and/or category limits.
+4. Record an actual positive PLN expense with date incurred, mandatory owner-owned category, and optional description.
+5. List a selected month's expenses, optionally filter by category, and use pagination.
+6. Retrieve one monthly summary with category-level totals, overall totals, remaining values, and advisory planning warnings.
+7. Observe strict isolation from a second preconfigured owner.
 
-- US-008: Edycja i zapis budżetu  
-  Jako użytkownik chcę edytować zaproponowany budżet, aby dopasować go do moich potrzeb.  
-  Kryteria akceptacji: zmiany zapisane w DB, widoczne w dashboardzie.
+### Budget and expense behavior
 
-- US-009: Monitorowanie wykorzystania budżetu  
-  Jako użytkownik chcę widzieć aktualne wykorzystanie budżetu, aby kontrolować wydatki.  
-  Kryteria akceptacji: dashboard pokazuje saldo i procenty, przekroczenia wyzwalają alert.
+- Budgets are created when the overall limit or first category limit is configured.
+- Category limits are unique per owner, category, and month.
+- Both overall and category limits are planning aids, not enforcement gates.
+- Allocations may exceed an overall limit and expenses may exceed either limit.
+- Excess appears as a warning or negative remainder; no write is blocked because of a limit.
+- Expense month is derived from actual incurred date; future expense dates are rejected.
+- Expenses can be recorded before a category limit exists.
+- Summaries include categories with limits but no expenses and categories with expenses but no limit.
+- Missing optional limits are represented as absent, never as an artificial zero.
+- Only PLN is supported.
 
-### Wydatki cykliczne
-- US-010: Dodanie wydatku cyklicznego  
-  Jako użytkownik chcę dodać wydatek cykliczny, aby system przypominał mi o płatnościach.  
-  Kryteria akceptacji: wydatek zapisany, widoczny w nadchodzących płatnościach.
+### Demonstration scenario
 
-- US-011: Przypomnienie o płatności cyklicznej  
-  Jako system chcę przypomnieć o nadchodzącej płatności, aby użytkownik nie zapomniał.  
-  Kryteria akceptacji: powiadomienie wysłane −3 i 0 dni (chyba że oznaczone „Zapłacone”).
+Owner A sets an overall August budget of 5,000 PLN, allocates 3,000 PLN to food and 3,000 PLN to clothing, and receives a non-blocking 1,000 PLN over-allocation warning. A 150 PLN food expense and a 200 PLN transport expense without a category limit are both recorded. The summary reports 350 PLN overall spending, appropriate per-category amounts, and 4,650 PLN remaining against the overall limit. Owner B cannot see or use Owner A's categories, limits, or expenses.
 
-- US-012: Oznaczenie płatności jako zapłaconej  
-  Jako użytkownik chcę oznaczyć płatność jako zapłaconą, aby system zaplanował kolejny termin.  
-  Kryteria akceptacji: płatność oznaczona, pojawia się następna instancja.
+## Explicitly outside M1
 
-### Powiadomienia
-- US-013: Konfiguracja preferencji powiadomień  
-  Jako użytkownik chcę ustawić preferencje powiadomień, aby otrzymywać tylko interesujące mnie alerty.  
-  Kryteria akceptacji: można włączyć/wyłączyć email i web push.
+- Category rename, archival, and two-level subcategories.
+- Expense updates or deletion.
+- Income, opening balances, and copying limits into another month.
+- Public account registration and household sharing.
+- Multi-currency, future-dated actual expenses, planned and recurring expenses.
+- Angular or another dedicated frontend.
+- AWS deployment, Terraform, CSV import, and AI features.
+- API Gateway, an external message broker, mandatory asynchronous communication, and independently deployed microservices.
 
-- US-014: Alert o przekroczeniu budżetu  
-  Jako system chcę powiadomić użytkownika o przekroczeniu limitu, aby mógł zareagować.  
-  Kryteria akceptacji: użytkownik otrzymuje email/web push zależnie od preferencji.
+## Evolution after M1
 
-### Przeglądanie danych
-- US-015: Przeglądanie listy transakcji  
-  Jako użytkownik chcę przeglądać transakcje, aby analizować wydatki.  
-  Kryteria akceptacji: możliwość filtrowania po dacie i kategoriach OR.
+- **M2:** lifecycle operations, hierarchical categories, income, opening balance, and monthly-planning reuse.
+- **M3:** deliberate, Terraform-managed AWS deployment with monitoring and cost protection.
+- **M4:** focused Angular interface for the deployed API.
+- **M5:** CSV ingestion, validation, import reporting, and justified cloud storage.
+- **M6:** recurring, future/planned, and seasonal expenses.
+- **M7:** AI-supported categorization of imported transactions.
+- **M8:** explainable AI budget proposals using transaction history, income, opening balances, recurring costs, and seasonal obligations. Owners explicitly accept, edit, or reject proposals.
+- **M9:** optional event-driven processing, notifications, deeper observability, or a service extraction only when a concrete need is documented.
 
-- US-016: Dashboard  
-  Jako użytkownik chcę widzieć szybki przegląd budżetu, aby kontrolować finanse jednym rzutem oka.  
-  Kryteria akceptacji: dashboard pokazuje saldo, nadchodzące płatności, ostatnie transakcje, wykorzystanie budżetu.
+See [`roadmap.md`](roadmap.md) for dependencies and definition of done.
 
-## 6. Metryki sukcesu
-- Minimum 3 pełne budżety miesięczne przygotowane z pomocą AI.
-- ≥ 75% limitów budżetowych zaproponowanych przez AI zostało zaakceptowanych lub minimalnie zmodyfikowanych.
-- Aplikacja obsługuje pełny cykl: import CSV → analiza historii → budżet AI → monitorowanie.
-- Subiektywna ocena: planowanie budżetu z aplikacją jest szybsze i mniej frustrujące.
-- Techniczne DoD: poprawny import CSV, poprawne generowanie budżetu, sprawny dashboard, działające powiadomienia, obsługa płatności cyklicznych.
+## Product principles
+
+1. Actual financial history must never be blocked because a plan was exceeded.
+2. Planning inconsistencies are visible, actionable, and non-destructive.
+3. Owner identity and data isolation are baseline product behavior.
+4. Deliver a complete, narrow workflow before adding infrastructure or automation.
+5. AI proposes and explains; the owner remains responsible for decisions.
+6. Choose architecture according to demonstrated needs, not a technology checklist.
+7. Distinguish implemented functionality from intended future functionality.
+
+## M1 success criteria
+
+- Two authenticated demo users can independently complete the product flow through OpenAPI.
+- Every operation derives the owner from a validated access token.
+- Positive actual expenses are correctly grouped by incurred month and category.
+- Overall and category summaries calculate spending, remaining values, and warning states correctly.
+- Pagination and category filtering operate only on the authenticated owner's data.
+- Spring Modulith verifies module boundaries and the absence of cycles.
+- Automated integration tests prove cross-owner isolation.
+- Local application, PostgreSQL, and Keycloak can be started reproducibly.
+- GitHub Actions runs build, unit, integration, and architecture checks.
+
+## Related documents
+
+- [Domain vocabulary and confirmed decisions](../CONTEXT.md)
+- [Functional and non-functional requirements](requirements.md)
+- [User stories](user_stories.md)
+- [Delivery roadmap](roadmap.md)
+- [Modular monolith ADR](architecture/adr/0001-modular-monolith-first.md)
