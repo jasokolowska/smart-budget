@@ -1,8 +1,12 @@
 package com.sokolowska.smartbudget
 
+import com.sokolowska.smartbudget.modulithfixture.ModulithVerificationFixture
+import com.tngtech.archunit.core.importer.ImportOption
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.modulith.core.ApplicationModules
+import org.springframework.modulith.core.Violations
 
 class ModularArchitectureTests {
   private val modules = ApplicationModules.of(SmartBudgetApplication::class.java)
@@ -18,5 +22,13 @@ class ModularArchitectureTests {
   @Test
   fun `module dependencies follow the declared architecture`() {
     modules.verify()
+  }
+
+  @Test
+  fun `verification rejects an illegal module dependency`() {
+    val invalidModules =
+      ApplicationModules.of(ModulithVerificationFixture::class.java, ImportOption { true })
+
+    assertThrows<Violations> { invalidModules.verify() }
   }
 }
