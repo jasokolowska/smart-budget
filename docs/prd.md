@@ -1,82 +1,104 @@
 # Product Requirements Document: Smart Budget
 
-Status: **draft for owner review**. This document supersedes the archived microservice-era PRD.
+Status: **approved product baseline**. Supersedes microservice-era material stored under `docs/archive/`.
 
 ## Product vision
 
-Smart Budget helps an individual or household understand whether spending within a selected category still fits the monthly plan. The first usable version focuses on a short, trustworthy budgeting workflow rather than automation, AI, or a full consumer-facing interface.
+Enable an individual to plan a monthly spending budget, record actual expenses, understand overspending without hiding reality, and progressively automate routine financial work.
 
-The repository also functions as a public engineering portfolio. Its implementation should demonstrate sound domain modeling, explicit architectural boundaries, secure ownership, automated verification, and decisions that can be explained during a technical interview.
+The product also demonstrates practical Kotlin/Spring backend engineering, explicit domain boundaries, secure owner isolation, maintainable delivery, AWS infrastructure, and later applied AI.
 
 ## Primary user
 
-An authenticated person who wants to define personal spending categories, plan category-level monthly limits, record expenses, and check the current state of a selected budget month.
+An authenticated individual managing a personal budget. The first version is not a multi-person household account.
 
-Shared household accounts, multiple budget owners, guest mode, and organization/team accounts are not part of the first milestone.
+Typical questions:
 
-## Problem statement
+- How much can I spend this month?
+- How much have I assigned to particular categories?
+- What did I actually spend, and where?
+- Am I over my overall plan or a category plan?
+- Which regular or seasonal costs should influence future budgets?
 
-A manually maintained spreadsheet can show a plan, but keeping category limits and actual expenses synchronized is repetitive and error-prone. The first version should answer one practical question accurately:
+## Milestone M1: secure budgeting vertical slice
 
-> How much have I already spent in this category this month, and how much of my planned limit remains?
+An owner can:
 
-## First milestone: minimum viable vertical slice
+1. Authenticate through Keycloak/OIDC and use the documented OpenAPI.
+2. Create and list personal expense categories.
+3. Plan any past or future month by setting an optional overall monthly limit and/or category limits.
+4. Record an actual positive PLN expense with date incurred, mandatory owner-owned category, and optional description.
+5. List a selected month's expenses, optionally filter by category, and use pagination.
+6. Retrieve one monthly summary with category-level totals, overall totals, remaining values, and advisory planning warnings.
+7. Observe strict isolation from a second preconfigured owner.
 
-The first milestone is complete when one authenticated owner can:
+### Budget and expense behavior
 
-1. Create an expense category.
-2. Set a spending limit for that category and a selected calendar month.
-3. Record an expense assigned to that category.
-4. Retrieve the category's monthly limit, total spending, and remaining amount.
-5. Access only their own categories, limits, expenses, and summaries.
+- Budgets are created when the overall limit or first category limit is configured.
+- Category limits are unique per owner, category, and month.
+- Both overall and category limits are planning aids, not enforcement gates.
+- Allocations may exceed an overall limit and expenses may exceed either limit.
+- Excess appears as a warning or negative remainder; no write is blocked because of a limit.
+- Expense month is derived from actual incurred date; future expense dates are rejected.
+- Expenses can be recorded before a category limit exists.
+- Summaries include categories with limits but no expenses and categories with expenses but no limit.
+- Missing optional limits are represented as absent, never as an artificial zero.
+- Only PLN is supported.
 
-The documented OpenAPI is the demonstrable interface for this milestone. A dedicated frontend is not required.
-The milestone includes real authentication and must not rely on a development-only identity adapter. Keycloak authenticates Owners through OIDC. Smart Budget validates issued access tokens and keeps provider-specific details outside the domain model.
-Two preconfigured Owners are provided for the MVP demonstration. Public self-registration is outside the first milestone.
+### Demonstration scenario
 
-## Explicitly outside the first milestone
+Owner A sets an overall August budget of 5,000 PLN, allocates 3,000 PLN to food and 3,000 PLN to clothing, and receives a non-blocking 1,000 PLN over-allocation warning. A 150 PLN food expense and a 200 PLN transport expense without a category limit are both recorded. The summary reports 350 PLN overall spending, appropriate per-category amounts, and 4,650 PLN remaining against the overall limit. Owner B cannot see or use Owner A's categories, limits, or expenses.
 
-- Bank integrations, webhooks, and CSV import.
-- Automatic classification, ATM-specific workflows, and expense splitting.
-- AI-generated budget suggestions and LLM integrations.
-- Recurring expenses, scheduled jobs, reminders, email, and web push.
-- Angular or another dedicated frontend, offline support, and PWA features.
-- Shared budgets, multiple currencies, exports, analytics, and advanced dashboards.
-- Public self-registration and account-lifecycle flows beyond the preconfigured demonstration Owners.
-- AWS deployment, Terraform, message brokers, API Gateway, and microservices.
+## Explicitly outside M1
 
-These ideas remain possible future extensions. Their exclusion is a scope decision, not a claim that they are permanently undesirable.
+- Category rename, archival, and two-level subcategories.
+- Expense updates or deletion.
+- Income, opening balances, and copying limits into another month.
+- Public account registration and household sharing.
+- Multi-currency, future-dated actual expenses, planned and recurring expenses.
+- Angular or another dedicated frontend.
+- AWS deployment, Terraform, CSV import, and AI features.
+- API Gateway, an external message broker, mandatory asynchronous communication, and independently deployed microservices.
+
+## Evolution after M1
+
+- **M2:** lifecycle operations, hierarchical categories, income, opening balance, and monthly-planning reuse.
+- **M3:** deliberate, Terraform-managed AWS deployment with monitoring and cost protection.
+- **M4:** focused Angular interface for the deployed API.
+- **M5:** CSV ingestion, validation, import reporting, and justified cloud storage.
+- **M6:** recurring, future/planned, and seasonal expenses.
+- **M7:** AI-supported categorization of imported transactions.
+- **M8:** explainable AI budget proposals using transaction history, income, opening balances, recurring costs, and seasonal obligations. Owners explicitly accept, edit, or reject proposals.
+- **M9:** optional event-driven processing, notifications, deeper observability, or a service extraction only when a concrete need is documented.
+
+See [`roadmap.md`](roadmap.md) for dependencies and definition of done.
 
 ## Product principles
 
-- Deliver one complete owner-visible workflow before adding breadth.
-- Favor clear domain language over infrastructure-driven naming.
-- Make ownership isolation a product requirement, not an afterthought.
-- Keep implementation small enough to advance in approximately one-hour sessions.
-- Record why architectural choices were made and which alternatives were rejected.
-- Add infrastructure only when it solves a demonstrated product or operational problem.
+1. Actual financial history must never be blocked because a plan was exceeded.
+2. Planning inconsistencies are visible, actionable, and non-destructive.
+3. Owner identity and data isolation are baseline product behavior.
+4. Deliver a complete, narrow workflow before adding infrastructure or automation.
+5. AI proposes and explains; the owner remains responsible for decisions.
+6. Choose architecture according to demonstrated needs, not a technology checklist.
+7. Distinguish implemented functionality from intended future functionality.
 
-## Success criteria
+## M1 success criteria
 
-The first milestone succeeds when:
-
-- The complete category -> limit -> expense -> summary scenario can be demonstrated through documented API calls.
-- The complete workflow can be explored through the published OpenAPI without a dedicated frontend.
-- Calculations are correct for the selected owner, category, and month.
-- Automated tests prove that one owner cannot read or modify another owner's data.
-- Real authentication establishes the Owner identity used by every protected operation.
-- Architectural boundaries are understandable and verified once Spring Modulith is introduced.
-- The repository clearly distinguishes working functionality from planned capabilities.
-
-The legacy metrics involving AI acceptance rate, CSV imports, notifications, or a fixed historical deadline are no longer MVP acceptance criteria.
-
-## Decisions awaiting confirmation
-
-Business rules that remain unresolved are listed in [`../CONTEXT.md`](../CONTEXT.md). They should be resolved through a short owner interview before being promoted to acceptance criteria.
+- Two authenticated demo users can independently complete the product flow through OpenAPI.
+- Every operation derives the owner from a validated access token.
+- Positive actual expenses are correctly grouped by incurred month and category.
+- Overall and category summaries calculate spending, remaining values, and warning states correctly.
+- Pagination and category filtering operate only on the authenticated owner's data.
+- Spring Modulith verifies module boundaries and the absence of cycles.
+- Automated integration tests prove cross-owner isolation.
+- Local application, PostgreSQL, and Keycloak can be started reproducibly.
+- GitHub Actions runs build, unit, integration, and architecture checks.
 
 ## Related documents
 
-- [`requirements.md`](requirements.md)
-- [`user_stories.md`](user_stories.md)
-- [`tech-stack.md`](tech-stack.md)
-- [`architecture/adr/0001-modular-monolith-first.md`](architecture/adr/0001-modular-monolith-first.md)
+- [Domain vocabulary and confirmed decisions](../CONTEXT.md)
+- [Functional and non-functional requirements](requirements.md)
+- [User stories](user_stories.md)
+- [Delivery roadmap](roadmap.md)
+- [Modular monolith ADR](architecture/adr/0001-modular-monolith-first.md)

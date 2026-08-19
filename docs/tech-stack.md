@@ -1,61 +1,74 @@
 # Technology Stack and Decision Status
 
-Status: **draft for owner review**. Technology selections describe either verified current code or an architectural target; the two must not be confused.
+Status: **approved technical direction**. Distinguish verified existing implementation from future target capabilities.
 
-## Verified current state on `main`
+## Verified baseline on `main`
 
-| Technology or structure | Evidence | Status |
+| Technology or structure | Existing evidence | Status |
 | --- | --- | --- |
-| Java 21 | Gradle Java toolchains in `server/app/build.gradle.kts` and `server/transaction/build.gradle.kts` | Implemented |
-| Spring Boot 3.5.6 | Gradle plugin declarations in the existing subprojects | Implemented |
-| Gradle Kotlin DSL | Existing `build.gradle.kts` and `settings.gradle.kts` files | Implemented |
-| `app` and `transaction` Gradle subprojects | `server/settings.gradle.kts` | Implemented |
-| GitHub Actions Gradle build | `.github/workflows/ci.yml` | Implemented |
-| Spotless configuration | Root `server/build.gradle.kts` | Implemented |
+| Java 21 | Gradle Java toolchain in existing subprojects | Present |
+| Spring Boot | Existing Gradle plugin configuration | Present |
+| Gradle Kotlin DSL | `build.gradle.kts` and `settings.gradle.kts` | Present |
+| `app` and `transaction` Gradle subprojects | Existing `server/settings.gradle.kts` | Present |
+| GitHub Actions Gradle build | Existing workflow | Present |
+| Spotless configuration | Existing Gradle configuration | Present |
 
-The current `main` does not yet establish a Kotlin-first application, a Spring Modulith dependency, PostgreSQL/Flyway persistence, or the complete product workflow. Older README statements suggesting otherwise were inaccurate.
+A Kotlin-first application, the accepted Spring Modulith boundaries, complete PostgreSQL/Flyway persistence, Keycloak security, and the full budgeting workflow are targets until implemented and verified.
 
-## Selected target stack for the first product milestone
+## M1 target stack
 
-| Concern | Target | Why |
+| Concern | Approved target | Purpose |
 | --- | --- | --- |
-| Runtime | Java 21 | Stable runtime baseline already present in the repository. |
-| Primary application language | Kotlin | Matches the project's learning goals and intended backend portfolio. |
-| Application framework | Spring Boot | Supports REST endpoints, validation, security, testing, and the existing build. |
-| Architecture verification | Spring Modulith | Makes logical domain boundaries explicit and testable within one application. |
-| Build | Gradle Kotlin DSL | Already present; do not introduce Maven instructions or `pom.xml`. |
-| Database | One PostgreSQL database | Sufficient for a single deployable application and the initial domain model. |
-| Schema migrations | Flyway | One selected migration tool; Liquibase is not a parallel option. |
-| Persistence | Spring Data JPA initially | Prefer one clear persistence approach before considering jOOQ for a demonstrated reporting need. |
-| API | REST plus published OpenAPI documentation | Provides the demonstrable interface for the complete first milestone without requiring a dedicated frontend. |
-| Validation | Jakarta Bean Validation | Provides consistent request validation. |
-| Authentication | Keycloak using OIDC with two preconfigured demonstration Owners | Provides real, reproducible MVP authentication without making Smart Budget responsible for credential storage or public registration. |
-| API security | Spring Security OAuth2 Resource Server with JWT validation | Validates signature, issuer, audience, and token lifetime and derives Owner identity from issuer plus subject. |
-| Tests | JUnit 5, focused domain tests, integration tests, Testcontainers for PostgreSQL | Verifies business rules, persistence, and owner isolation. |
-| Local development | Docker Compose when persistence is introduced | Provides one local PostgreSQL instance without a distributed stack. |
-| Continuous integration | Existing GitHub Actions workflow, adjusted only in a separate implementation task | Keeps build/test feedback visible without expanding this documentation branch. |
+| Runtime | Java 21 | Existing stable runtime baseline |
+| New application code | Kotlin; existing Java may remain temporarily | Kotlin/Spring backend portfolio |
+| Framework | Spring Boot | One deployable web application |
+| Module architecture | Spring Modulith | Verify `categories`, `budget`, and `expenses` boundaries |
+| Build | Gradle Kotlin DSL | Existing repository build; no Maven introduction |
+| Database | One PostgreSQL database | Relational owner-scoped product data |
+| Migration | Flyway | One reproducible migration mechanism |
+| Persistence | Spring Data JPA initially | Clear initial persistence model |
+| Cross-module relations | Identifier references only | Preserve ownership boundaries |
+| Money | Exact decimal representation such as `BigDecimal`; PLN only | Avoid floating-point financial errors |
+| HTTP API | REST and OpenAPI | Demonstrate the first complete flow without a dedicated UI |
+| Validation | Jakarta Bean Validation plus domain rules | Reject malformed/future expense inputs |
+| Identity provider | Keycloak OIDC with two demo owners | Real local authentication |
+| API security | Spring Security OAuth2 Resource Server | Validated JWT and trusted issuer/subject identity |
+| Tests | JUnit 5, unit/integration tests, Testcontainers, Modulith verification | Business correctness, security, and architecture |
+| Local environment | Docker Compose: application, PostgreSQL, Keycloak | Reproducible demonstration |
+| Automation | GitHub Actions | Build and unit/integration/architecture checks |
 
-## Decisions deliberately deferred
+## Approved later technologies
 
-- Spring Boot/Kotlin/Spring Modulith version upgrades and compatibility verification.
-- Production hosting and operational hardening of Keycloak, including availability, backup, email verification, MFA, and account recovery.
-- Public self-registration. Amazon Cognito may be evaluated as an OIDC-compatible alternative only when an AWS deployment is explicitly selected.
-- Angular or any other dedicated frontend framework.
-- CSV libraries, AI integrations, or an LLM provider.
-- jOOQ, Kotest, Mailpit, Redis, RabbitMQ, Kafka, SQS, and EventBridge.
-- Terraform, ECS/Fargate, App Runner, RDS, S3, and production observability.
-- Microservice extraction and infrastructure for independently deployed services.
+- **M3:** AWS and Terraform; hosting service selected only after a documented architecture comparison.
+- **M3:** basic AWS/application logs, metrics, operational alarms, and AWS budget/cost alert.
+- **M4:** Angular + TypeScript; lightweight UI only.
+- **M5:** CSV parsing; S3 and asynchronous AWS services only when the ingestion case justifies them.
+- **M7-M8:** an LLM/model provider selected when evaluating privacy, capability, operating cost, and integration requirements.
+- **M9:** optional OpenTelemetry, Datadog, SQS/EventBridge/Lambda, Kafka, Redis, notifications, or service extraction when supported by an ADR.
+
+No provider, AWS compute service, queue, AI model, or messaging architecture is selected merely because it appeared in historical documentation.
 
 ## Architecture boundaries
 
-The target is **one Spring Boot deployment and one PostgreSQL database**. Logical application modules may include `categories`, `budgeting`, `transactions`, and `reporting`, but the final boundaries require product-owner review.
+- `categories` owns category rules and persistence.
+- `expenses` owns actual expense records and exposes spending queries.
+- `budget` owns month plans, limits, warnings, and composed summaries.
+- Allowed dependencies: `expenses -> categories`; `budget -> categories`; `budget -> expenses`.
+- Public application interfaces are the only cross-module integration point.
+- Repositories and entities remain private to their owning modules.
+- Do not add cross-module JPA associations.
+- Build subprojects and application modules remain distinct concepts.
 
-The existing Gradle subproject layout is a physical build structure. Spring Modulith application modules are logical domain boundaries. The project must not assume these concepts are automatically identical.
+## References
 
-## Official references
-
+- [Spring Boot documentation](https://docs.spring.io/spring-boot/)
+- [Kotlin documentation](https://kotlinlang.org/docs/home.html)
 - [Spring Modulith fundamentals](https://docs.spring.io/spring-modulith/reference/fundamentals.html)
-- [Spring Modulith module verification](https://docs.spring.io/spring-modulith/reference/verification.html)
-- [Spring Modulith integration testing](https://docs.spring.io/spring-modulith/reference/testing.html)
-- [Spring Boot system requirements](https://docs.spring.io/spring-boot/system-requirements.html)
-- [Kotlin releases](https://kotlinlang.org/docs/releases.html)
+- [Spring Modulith verification](https://docs.spring.io/spring-modulith/reference/verification.html)
+- [Spring Modulith testing](https://docs.spring.io/spring-modulith/reference/testing.html)
+- [Spring Security OAuth2 Resource Server JWT](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html)
+- [Keycloak documentation](https://www.keycloak.org/documentation)
+- [Flyway migration documentation](https://documentation.red-gate.com/fd/migrations-271585107.html)
+- [Terraform AWS tutorials](https://developer.hashicorp.com/terraform/tutorials/aws-get-started)
+- [AWS Well-Architected Framework](https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html)
+- [Angular documentation](https://angular.dev/overview)

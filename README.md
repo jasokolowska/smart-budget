@@ -1,49 +1,72 @@
 # Smart Budget
 
-Smart Budget is a personal-finance backend and portfolio project focused on deliberate architecture, Kotlin/Spring engineering, and cloud-readiness.
+Smart Budget is a personal-budgeting application and public engineering portfolio focused on Kotlin, Spring, modular architecture, secure ownership, and practical AWS delivery.
 
-> **Project status:** documentation realignment. The target architecture has been selected, but several target technologies are not implemented on `main` yet.
+> **Current status:** product and architecture decisions are approved; the implementation on `main` is still an early-stage baseline. Planned capabilities must not be described as already delivered.
 
-## Current implementation versus target
+## Current implementation and approved target
 
-| Area | Currently present on `main` | Target direction |
+| Area | Verified on `main` | Approved direction |
 | --- | --- | --- |
-| Application | Early-stage Java/Spring Boot application | Kotlin-first Spring Boot application |
-| Build | Gradle Kotlin DSL, Java 21, `app` and `transaction` subprojects | One deployable application with explicit domain-module boundaries |
-| Architecture | Partially implemented structure and inconsistent legacy documentation | Modular monolith supported by Spring Modulith |
-| Persistence | Not established consistently on `main` | PostgreSQL with Flyway migrations |
-| Authentication | Not implemented | Keycloak OIDC with Smart Budget as an OAuth2 resource server |
-| Quality | Gradle build and GitHub Actions workflow | Domain tests, integration tests, and module-boundary verification |
+| Runtime and build | Java 21, Gradle Kotlin DSL, `app` and `transaction` subprojects | Java 21, Kotlin-first Spring Boot application |
+| Architecture | Incomplete early-stage backend | One deployable modular monolith with `categories`, `budget`, and `expenses` modules |
+| Persistence | Not consistently established on `main` | One PostgreSQL database, Flyway, and module-owned tables |
+| Authentication | Not yet implemented on `main` | Keycloak OIDC, Spring Security OAuth2 Resource Server, and two demo users |
+| Quality | Existing Gradle build and GitHub Actions workflow | Unit, integration, owner-isolation, and Spring Modulith architecture tests |
+| Deployment | No approved cloud implementation | Local Docker Compose first; AWS and Terraform after the core product is useful |
+| User interface | No product frontend | OpenAPI for the first milestones; a focused Angular UI after AWS deployment |
 
-Do not interpret an architectural target as functionality that already exists.
+## First complete product milestone
 
-## First usable product slice
-
-The first milestone is one end-to-end workflow:
+An authenticated owner can:
 
 1. Create a personal expense category.
-2. Set a monthly spending limit for that category.
-3. Record an expense assigned to the category.
-4. Retrieve how much was spent and how much remains for the selected month.
+2. Set an optional overall monthly budget and category-level monthly limits.
+3. Record a positive PLN expense with an owner-owned category, actual expense date, and optional description.
+4. List expenses for a selected month, optionally filtered by category, using pagination.
+5. Retrieve a monthly summary containing category-level and overall spending, remaining amounts, and non-blocking planning warnings.
+6. Demonstrate that a second authenticated owner cannot access another owner's data.
 
-CSV import, AI-generated budgets, notifications, recurring payments, a dedicated frontend, cloud deployment, and microservices are intentionally outside that first slice.
+A category without a limit can still receive expenses. Categories with limits but no expenses appear in the summary. All limits are planning signals: overspending and over-allocation produce warnings or negative remaining amounts, not rejected writes.
+
+CSV, AI, subcategories, income, recurring expenses, Angular, AWS, messaging infrastructure, and microservices are outside the first milestone.
+
+## Roadmap
+
+| Milestone | Deliverable |
+| --- | --- |
+| M0 | Approved documentation, architecture model, roadmap, and aligned issue backlog |
+| M1 | Secure Kotlin/Spring modular-monolith budgeting workflow demonstrated through OpenAPI |
+| M2 | Product completeness: lifecycle actions, subcategories, income, opening balance, and reusable monthly planning |
+| M3 | Cost-aware AWS deployment, Terraform, basic observability, and an explicit hosting ADR |
+| M4 | Focused Angular application for the deployed budgeting API |
+| M5 | CSV import with reporting, owner isolation, and a justified AWS/S3 integration |
+| M6 | Recurring, planned, and periodic expenses |
+| M7 | AI-assisted transaction categorization |
+| M8 | Human-approved, AI-assisted budget planning |
+| M9 | Optional evidence-led operational or architectural experiments |
+
+See the full [delivery roadmap](docs/roadmap.md) for scope, dependencies, acceptance criteria, and learning outcomes.
 
 ## Documentation
 
-- [Product requirements](docs/prd.md): product purpose, users, scope, and success criteria.
-- [Functional and non-functional requirements](docs/requirements.md): implementation-oriented requirements and acceptance boundaries.
-- [User stories](docs/user_stories.md): small, verifiable stories for the first product slice.
-- [Technology decisions](docs/tech-stack.md): current implementation, target stack, and explicitly deferred technologies.
-- [Domain context](CONTEXT.md): shared vocabulary, ownership rules, and unresolved decisions.
-- [Architecture decision: modular monolith first](docs/architecture/adr/0001-modular-monolith-first.md).
-- [Architecture model](docs/architecture/workspace.dsl): target C4 context, container, and module views.
-- [Documentation review guide](docs/documentation-review.md): owner interview and Cursor review workflow.
-- [Existing issue audit](docs/backlog-audit.md): review recommendations for the legacy backlog.
-- [Historical microservice documents](docs/archive/2025-microservices/README.md): superseded material preserved for traceability.
+- [Domain context and approved product decisions](CONTEXT.md)
+- [Product requirements](docs/prd.md)
+- [Functional and non-functional requirements](docs/requirements.md)
+- [User stories and acceptance scenarios](docs/user_stories.md)
+- [Milestones and delivery roadmap](docs/roadmap.md)
+- [Technology stack and decision status](docs/tech-stack.md)
+- [Architecture decision: modular monolith first](docs/architecture/adr/0001-modular-monolith-first.md)
+- [Architecture decision: explicit module ownership](docs/architecture/adr/0002-module-boundaries-and-data-ownership.md)
+- [Architecture decision: authenticated owner identity](docs/architecture/adr/0003-authenticated-owner-identity.md)
+- [Target C4 architecture model](docs/architecture/workspace.dsl)
+- [Issue audit and roadmap alignment](docs/backlog-audit.md)
+- [Agent instructions](AGENTS.md)
+- [Historical microservice-era material](docs/archive/2025-microservices/README.md)
 
-## Existing local build
+## Existing build
 
-Run commands from `server/` using the Gradle wrapper already committed to the repository:
+Run commands from `server/` with the existing wrapper:
 
 ```bash
 ./gradlew build
@@ -51,19 +74,17 @@ Run commands from `server/` using the Gradle wrapper already committed to the re
 ./gradlew :app:bootRun
 ```
 
-On Windows, use `gradlew.bat` instead of `./gradlew`.
-
-These commands describe the existing Gradle project. They do not imply that the target Kotlin, Spring Modulith, PostgreSQL, or authentication setup has already been delivered.
+On Windows use `gradlew.bat`. These commands describe the current baseline; they do not claim that the approved target architecture is already implemented.
 
 ## Working agreements
 
-- Keep one repository and one current set of product and architecture documents.
-- Implement features as small, reviewable vertical slices.
-- Keep ownership and authorization explicit; never accept a client-provided user identifier as proof of identity.
-- Prefer clear synchronous module contracts until asynchronous communication solves a demonstrated problem.
-- Record consequential architectural decisions as ADRs.
-- Treat historical documentation and older issues as inputs to review, not active specifications.
+- Maintain one active repository and one approved product specification.
+- Deliver reviewable vertical slices suitable for focused one-hour work sessions.
+- Derive ownership from the authenticated principal, never from client-supplied owner identifiers.
+- Communicate between modules through explicit public contracts.
+- Record consequential decisions and deployment trade-offs in ADRs.
+- Never commit local `.env` files or real credentials.
 
 ## License
 
-This project is distributed under the [MIT License](LICENSE).
+Distributed under the [MIT License](LICENSE).

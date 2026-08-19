@@ -1,65 +1,69 @@
 # ADR 0001: Start with a Modular Monolith
 
-- Status: **accepted architectural direction; detailed module boundaries pending review**.
+- Status: **accepted**.
 - Date: 2026-08-18.
 - Owner: Joanna Sokołowska.
 
 ## Context
 
-Earlier Smart Budget documents proposed an API Gateway, separate transaction/budget/notification services, multiple PostgreSQL databases, RabbitMQ, a dedicated Angular frontend, AI integration, and several additional infrastructure components.
+Earlier documents proposed an API Gateway, transaction/budget/notification microservices, multiple databases, RabbitMQ, a dedicated Angular application, and AI integration before completing a basic product flow.
 
-The repository does not yet contain a complete working budgeting flow. Development time is approximately one focused hour per session. The project should demonstrate deliberate backend architecture and an understanding of domain boundaries, not unnecessary operational complexity.
-
-The existing public repository already contains useful project history, a Java 21/Spring Boot/Gradle baseline, and an incomplete category-related pull request. A second active repository would create competing documentation, duplicate backlogs, and ambiguity about the canonical implementation.
+Development time is limited to approximately one focused hour per session. The project should demonstrate explainable Kotlin/Spring architecture and practical delivery without introducing an operational topology that has no validated product need.
 
 ## Decision
 
-Smart Budget will be developed as **one deployable modular monolith in the existing `jasokolowska/smart-budget` repository**.
+Develop Smart Budget in the existing `jasokolowska/smart-budget` repository as **one deployable Kotlin-first Spring Boot modular monolith**.
 
-The intended application is Kotlin-first, uses Spring Boot and Spring Modulith, and stores data in one PostgreSQL database managed through Flyway migrations. Logical domain boundaries will initially be explored around categories, budgeting, transactions, and reporting.
+The M1 application contains three logical Spring Modulith modules:
 
-Modules should communicate through explicit public APIs. Straightforward synchronous collaboration is acceptable for the first milestone. Domain events may be introduced later where they provide a specific, documented benefit; an external message broker is not a prerequisite.
+1. `categories` — owner-scoped expense classification.
+2. `expenses` — actual spending records and spending queries.
+3. `budget` — monthly plans, overall/category limits, advisory warnings, and summaries.
+
+One PostgreSQL database stores module-owned tables and uses Flyway migrations. Modules collaborate synchronously through explicit public application APIs. References between module-owned records use identifiers rather than JPA entity relationships.
+
+Real Keycloak/OIDC authentication and owner isolation are required in M1. OpenAPI is the first demonstration interface. Angular, AWS, events, and AI enter only at their roadmap stages.
 
 ## Alternatives considered
 
 ### Independent microservices from the start
 
-Rejected for the current phase because service boundaries are not validated, the user-facing workflow is incomplete, and separate deployment, databases, messaging, security, and integration testing would consume limited delivery time.
+Rejected: boundaries and scaling requirements are not yet validated. Independent deployment, service security, multiple databases, broker infrastructure, and distributed testing would delay a working product.
 
-### Two simultaneously maintained repositories
+### Maintaining two active repositories
 
-Rejected because both repositories would describe the same product while splitting documentation, issues, implementation effort, and portfolio narrative.
+Rejected: competing specifications and duplicate backlogs would make the canonical implementation unclear.
 
-### Completely new repository
+### Replacing the existing public repository
 
-Rejected because the existing repository can preserve project history while supporting a clean documentation and implementation restart from `main`.
+Rejected: the existing repository can preserve history while supporting a clean architectural direction.
 
 ## Consequences
 
 Positive:
 
-- One current product specification, backlog, repository, and deployment unit.
-- Lower operational overhead and faster feedback.
-- Domain boundaries can be adjusted before becoming network/service boundaries.
-- Architectural decisions, module tests, and the eventual extraction rationale become strong portfolio material.
+- One implementation, backlog, documentation baseline, and deployable unit.
+- Domain boundaries can evolve before becoming network boundaries.
+- Explicit Modulith verification becomes tangible portfolio evidence.
+- Limited development sessions can deliver complete vertical slices.
 
 Trade-offs:
 
-- Module boundaries still require active enforcement and must not degrade into a shared-internals monolith.
-- One database requires clear logical data ownership and carefully reviewed cross-module dependencies.
-- Existing microservice-oriented documents and GitHub issues must be reviewed and reclassified.
-- A future move to microservices would require a separate, evidence-based decision; it is not an automatic roadmap obligation.
+- One database still requires strict table ownership.
+- Public module contracts must remain small and deliberate.
+- Architecture tests must prevent cycles and accidental internal access.
+- Future extraction is optional and requires a separate evidence-based ADR.
 
-## Verification once implemented
+## Verification
 
-- Spring Modulith verifies the absence of cyclic module dependencies.
-- Internal module classes are not referenced across module boundaries.
-- Individual modules have focused integration tests where appropriate.
-- The first category -> limit -> expense -> summary flow runs end to end.
-- Cross-owner access is rejected and covered by automated tests.
+- Spring Modulith verifies three approved boundaries and the absence of cycles.
+- Internal persistence entities/repositories are not accessed by another module.
+- The core category -> budget/limit -> expense -> summary scenario works end to end.
+- Automated tests prove cross-owner isolation.
+- The C4 model reflects one backend and one database.
 
 ## References
 
 - [Spring Modulith fundamentals](https://docs.spring.io/spring-modulith/reference/fundamentals.html)
-- [Spring Modulith architecture verification](https://docs.spring.io/spring-modulith/reference/verification.html)
+- [Spring Modulith verification](https://docs.spring.io/spring-modulith/reference/verification.html)
 - [Martin Fowler: Monolith First](https://martinfowler.com/bliki/MonolithFirst.html)

@@ -1,42 +1,60 @@
 # Smart Budget Agent Instructions
 
-## Scope of the current branch
+## Canonical sources
 
-This branch is for **documentation and backlog analysis only**. Do not modify application source code, Gradle configuration, CI workflows, authentication, migrations, pull request #89, or issue statuses unless the repository owner explicitly requests a separate task.
-
-## Read these files first
+Read these documents before proposing changes:
 
 1. `README.md`
 2. `CONTEXT.md`
-3. `docs/prd.md`
-4. `docs/requirements.md`
-5. `docs/user_stories.md`
-6. `docs/tech-stack.md`
-7. `docs/architecture/adr/0001-modular-monolith-first.md`
-8. `docs/documentation-review.md`
-9. `docs/backlog-audit.md` when discussing existing GitHub issues.
+3. `docs/roadmap.md`
+4. `docs/prd.md`
+5. `docs/requirements.md`
+6. `docs/user_stories.md`
+7. `docs/tech-stack.md`
+8. `docs/architecture/adr/`
+9. `docs/backlog-audit.md` when working with existing GitHub issues
 
-## Facts and decisions
+Historical documents in `docs/archive/` explain rejected ideas and must not override approved requirements.
 
-- There is exactly one active repository: `jasokolowska/smart-budget`.
-- The current `main` contains an early-stage Java 21/Spring Boot/Gradle implementation with `app` and `transaction` Gradle subprojects.
-- Kotlin-first development, PostgreSQL, Flyway, and Spring Modulith are architectural targets; do not claim they are already configured unless the code proves it.
-- The selected architecture is one deployable modular monolith. API Gateway, multiple independently deployed services, two databases, RabbitMQ, Kafka, and mandatory asynchronous messaging are not part of the first milestone.
-- The first product workflow is category -> monthly limit -> expense -> monthly spent/remaining summary.
-- The project owner works in focused sessions of approximately one hour. Prefer small decisions, short documents, and reviewable slices.
+## Repository and architecture
 
-## Documentation rules
+- Canonical repository: `jasokolowska/smart-budget`.
+- Target: one deployable Kotlin-first Spring Boot modular monolith on Java 21.
+- First-milestone application modules: `categories`, `budget`, and `expenses`.
+- Spring Modulith application modules are logical domain boundaries; they are not automatically equivalent to Gradle subprojects.
+- Use one PostgreSQL database and Flyway. Each module owns its tables.
+- Access another module only through its explicit public application API.
+- Do not expose repositories, persistence entities, or implementation classes across module boundaries.
+- Store cross-module references as identifiers; do not introduce cross-module JPA object relationships.
+- Initial module collaboration is synchronous. Introduce events, queues, or independently deployed services only for a documented need.
+- Kotlin is the language for new domain modules. Existing Java may remain during migration.
 
-- Distinguish confirmed decisions, assumptions awaiting confirmation, existing implementation, and future possibilities.
-- Use terminology from `CONTEXT.md`; do not introduce synonyms for the same domain concept.
-- Keep product requirements independent of premature infrastructure choices.
-- Update all affected documents when an owner decision changes scope, terminology, module responsibilities, or acceptance criteria.
-- Preserve superseded material under `docs/archive/`; never treat it as the current source of truth.
-- Ask the owner about unresolved product behavior instead of inventing business rules.
-- Never broaden the first milestone with CSV, AI, recurring payments, notifications, Angular, AWS, or microservices without an explicit owner decision.
+## Approved product rules
 
-## Review workflow
+- M1: owner-isolated categories, optional overall monthly limit, monthly category limits, positive PLN expenses, paginated expense list, and overall/category monthly summaries.
+- Owner identity comes from a validated Keycloak/OIDC access token. Never trust request-body `userId`.
+- Category names are trimmed and unique case-insensitively per owner.
+- A budget month is created by setting its overall limit or first category limit.
+- One owner/category/month has at most one category limit; setting it again updates the same limit.
+- Overall and category limits are advisory; excessive allocations and actual overspending produce visible warnings or negative remaining values, never rejected expenses.
+- Expense date is the actual date incurred and cannot be in the future.
+- Expense category is mandatory, owner-owned, and need not have a limit.
+- Monthly summaries include limited categories without expenses and expenses in categories without limits.
+- M1 has no subcategories, category rename/archive, expense edit/delete, income, opening balance, automatic limit copying, future expenses, CSV, Angular, AWS, AI, or recurring payments.
+- Subsequent milestones and dependency order are defined in `docs/roadmap.md`.
 
-When asked to review documentation, interview the owner one topic at a time. Prioritize product scope, ownership/security, monthly-budget semantics, category lifecycle, expense rules, and provisional module boundaries. Update the documents only after resolving the relevant ambiguity.
+## Security and quality
 
-If Matt Pocock's skills are installed, prefer `/grill-with-docs` for this workflow; it relies on both `grilling` and `domain-modeling`. `/grill-me` by itself does not persist the conclusions.
+- M1 requires real OIDC authentication, two seeded demo owners, OpenAPI, local Docker Compose, and cross-owner integration tests.
+- Verify architecture with Spring Modulith and run unit, integration, and architecture tests in GitHub Actions.
+- Do not commit `.env`, access tokens, passwords, or other secrets. Commit only sanitized examples.
+- Preserve owner isolation in reads, writes, filtering, pagination, summaries, imports, and AI proposals.
+
+## Delivery discipline
+
+- Distinguish current implementation from target state.
+- Keep one issue and pull request focused on one reviewable outcome.
+- Update requirements, user stories, roadmap, and C4/ADR documentation when an approved decision changes.
+- Do not silently resurrect Gateway, multiple application databases, RabbitMQ, mandatory asynchronous messaging, or microservices.
+- Do not rewrite or merge PR #89 without a separate explicit decision.
+- Follow the latest direct instruction from the repository owner when working on this branch or backlog.

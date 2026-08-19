@@ -1,30 +1,28 @@
-workspace "Smart Budget - Target Modular Monolith" "Target architecture for the first usable budgeting workflow." {
+workspace "Smart Budget - Approved Modular Monolith" "Approved architecture for the owner-isolated personal budgeting workflow." {
 
     model {
-        owner = person "Budget Owner" "An authenticated person who manages personal categories, monthly limits, and expenses."
-        identityProvider = softwareSystem "Keycloak" "Authenticates Owners and issues OIDC access tokens for the Smart Budget API." "External Identity Provider"
+        owner = person "Budget Owner" "Authenticated individual managing personal categories, budget plans, and actual expenses."
+        identityProvider = softwareSystem "Keycloak" "OIDC identity provider authenticating demonstration owners and issuing access tokens." "External Identity Provider"
 
-        smartBudget = softwareSystem "Smart Budget" "A personal-budgeting application implemented as one modular monolith." {
-            application = container "Smart Budget Application" "One deployable backend exposing the budgeting API." "Kotlin, Spring Boot, Spring Modulith" {
-                categories = component "Categories Module" "Owns category lifecycle and owner-specific category rules." "Spring Modulith application module"
-                budgeting = component "Budgeting Module" "Owns budget months and category-level monthly limits." "Spring Modulith application module"
-                transactions = component "Transactions Module" "Owns recorded expenses and their retrieval." "Spring Modulith application module"
-                reporting = component "Reporting Module" "Combines public module data into monthly spent/remaining summaries." "Spring Modulith application module"
+        smartBudget = softwareSystem "Smart Budget" "Personal budgeting application implemented as one modular monolith." {
+            application = container "Smart Budget Backend" "One deployable backend exposing a documented budgeting API." "Kotlin, Spring Boot, Spring Modulith" {
+                categories = component "Categories Module" "Owns personal category identity, naming rules, and later lifecycle/hierarchy." "Spring Modulith application module"
+                expenses = component "Expenses Module" "Owns owner-scoped actual expenses, pagination, category filters, and spending queries." "Spring Modulith application module"
+                budget = component "Budget Module" "Owns monthly plans, advisory overall/category limits, warnings, and monthly summaries." "Spring Modulith application module"
             }
 
-            database = container "Application Database" "Stores owner-scoped categories, monthly limits, and expenses." "PostgreSQL" {
+            database = container "Application Database" "One PostgreSQL database containing separately owned module tables." "PostgreSQL" {
                 tags "Database"
             }
 
-            owner -> application "Creates categories and limits, records expenses, and reads monthly summaries" "HTTPS / JSON"
-            owner -> identityProvider "Authenticates"
-            application -> identityProvider "Discovers OIDC metadata and signing keys" "OIDC / HTTPS"
-            application -> database "Reads and writes owner-scoped application data" "SQL"
+            owner -> identityProvider "Authenticates" "OIDC / HTTPS"
+            owner -> application "Manages categories, plans limits, records expenses, and reads summaries" "HTTPS / JSON / OpenAPI"
+            application -> identityProvider "Discovers issuer metadata and signing keys; validates access tokens" "OIDC / HTTPS"
+            application -> database "Reads and writes owner-scoped records in module-owned tables" "SQL"
 
-            budgeting -> categories "Validates owner-owned categories through the public module API"
-            transactions -> categories "Validates owner-owned categories through the public module API"
-            reporting -> budgeting "Reads monthly category limits through the public module API"
-            reporting -> transactions "Reads category spending through the public module API"
+            expenses -> categories "Validates owned categories through the public module API"
+            budget -> categories "Validates category ownership through the public module API"
+            budget -> expenses "Reads owner-scoped monthly spending through the public module API"
         }
     }
 
@@ -32,19 +30,19 @@ workspace "Smart Budget - Target Modular Monolith" "Target architecture for the 
         systemContext smartBudget "system-context" {
             include *
             autolayout lr
-            title "Smart Budget - Target System Context"
+            title "Smart Budget - Approved System Context"
         }
 
         container smartBudget "containers" {
             include *
             autolayout tb
-            title "Smart Budget - One Application, One Database"
+            title "Smart Budget - One Backend, One Database, External Identity Provider"
         }
 
         component application "application-modules" {
             include *
             autolayout tb
-            title "Smart Budget - Provisional Application Module Boundaries"
+            title "Smart Budget - Categories, Expenses, and Budget Modules"
         }
 
         styles {

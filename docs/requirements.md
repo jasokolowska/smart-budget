@@ -1,121 +1,174 @@
 # Functional and Non-functional Requirements
 
-Status: **draft for owner review**. Only requirements marked `MVP` define the first implementation milestone.
+Status: **approved product baseline**.
 
 ## Scope conventions
 
-- `MVP`: required for the category -> limit -> expense -> monthly summary workflow.
-- `FUTURE`: a documented possibility that must not be implemented as part of the first slice.
-- `OPEN`: requires an explicit product-owner decision before implementation.
+- `M1` is the first secure, demonstrable backend vertical slice.
+- `M2`-`M9` identify explicitly later roadmap stages.
+- `MUST` indicates an acceptance requirement for the stated milestone.
+- `WARNING` is visible informational feedback; it never rejects a valid write.
 
-## Functional requirements
+## M1 functional requirements
 
-### FR-001: Owner identity and isolation — MVP
+### FR-001: Authenticated owner identity and isolation
 
-The application shall associate every category, monthly limit, and expense with the authenticated owner. All reads and writes shall be restricted to that owner.
+- Every protected operation MUST derive owner identity from a validated OIDC access token.
+- The stable owner key MUST be based on trusted issuer plus subject.
+- Request-provided `userId` MUST NOT determine ownership.
+- Keycloak MUST provide two preconfigured demonstration users.
+- Categories, budgets, limits, expenses, list filters, and summaries MUST be scoped to the authenticated owner.
+- Owner A MUST NOT read, change, list, or reference Owner B's resources.
+- Authentication failure returns HTTP 401. Authorization handling MUST NOT disclose another owner's data.
+- Public self-registration and household sharing are out of scope.
 
-Acceptance boundaries:
+### FR-002: Create and list personal categories
 
-- Ownership is derived from a trusted authentication/security context.
-- A client-provided `userId` must not establish ownership.
-- Accessing another owner's records must not expose or modify those records.
-- Real authentication is part of MVP acceptance; a development-only identity adapter is insufficient.
-- Keycloak shall authenticate Owners through OIDC and issue access tokens for the Smart Budget API.
-- Smart Budget shall operate as an OAuth2 resource server and validate token signature, issuer, audience, and lifetime.
-- Owner identity shall be derived from the trusted issuer and subject claims; email shall not be used as the stable ownership key.
-- Keycloak-specific types and claim mapping shall remain outside the domain model so another standards-compliant provider can replace it.
-- Authentication failures shall return `401`; authenticated requests lacking permission shall not reveal another Owner's data.
-- The reproducible MVP environment shall provide two preconfigured Owners for authentication and isolation demonstrations.
-- Public self-registration is `FUTURE` and shall remain disabled for the MVP.
+- An owner MUST be able to create and list expense categories.
+- Names MUST be trimmed and unique case-insensitively for that owner.
+- Different owners MAY use the same category name.
+- Category rename, archival, and hierarchy are M2 capabilities.
 
-### FR-002: Create a category — MVP
+### FR-003: Create a monthly budget and set an overall limit
 
-An owner shall be able to create a named expense category and retrieve their categories.
+- A budget month MUST be addressable as a year and month, e.g. `2026-08`.
+- The budget MUST be created when the owner sets its first category limit or optional overall limit.
+- Past, current, and future months MUST be supported for budget planning and reading.
+- The overall limit MUST be optional and advisory.
+- Setting or lowering it MUST NOT change or invalidate category limits.
+- A plan exceeding the overall amount MUST expose a visible non-blocking warning.
 
-Acceptance boundaries:
+### FR-004: Set an advisory category limit
 
-- A category belongs to exactly one owner.
-- Invalid or blank names are rejected.
-- Category names are trimmed and must be unique per Owner using a case-insensitive comparison.
-- Attempts to create a duplicate normalized name for the same Owner are rejected.
-- Different Owners may use the same Category name.
-- Renaming preserves the Category's identity and all existing Expense and Monthly limit associations; the new name follows the same normalization and uniqueness rules.
-- Whether renaming is delivered in the first milestone remains `OPEN`.
-- Deletion policy remains `OPEN`.
+- An owner MAY configure a positive exact-decimal PLN limit for an owner-owned category and month.
+- At most one limit MUST exist per owner, category, and month.
+- Reapplying a limit MUST update the existing amount.
+- Category limits MUST be allowed without an overall limit.
+- The sum of category limits MAY exceed the overall limit.
+- The API MUST expose allocated amount, unallocated amount where an overall limit exists, and over-allocation warnings.
+- Limits MUST NOT depend on recorded income.
 
-### FR-003: Configure a monthly category limit — MVP
+### FR-005: Record an actual expense
 
-An owner shall be able to define a spending limit for one of their categories and a selected budget month.
+- Amount MUST be positive and represented with exact PLN decimal precision.
+- Actual incurred date and owner-owned category MUST be provided.
+- Description MAY be omitted.
+- The date incurred MUST determine the expense's calendar month.
+- Future incurred dates MUST be rejected.
+- A category limit MUST NOT be required.
+- Overall or category overspending MUST NOT block recording.
+- Expense edit and delete are M2 capabilities.
 
-Acceptance boundaries:
+### FR-006: List monthly expenses
 
-- The category must belong to the same owner.
-- The limit must be represented as an exact decimal monetary amount.
-- The amount must be positive.
-- Whether a budget month is explicit or created implicitly remains `OPEN`.
-- Duplicate-limit and update policies remain `OPEN`.
+- An owner MUST be able to list expenses for a selected calendar month.
+- The list MUST optionally filter by one owner-owned category.
+- Each result MUST include incurred date, category, amount, and optional description.
+- Default page size MUST be 20.
+- Maximum page size MUST be 100.
+- Default order MUST be most recent incurred date first.
+- Records from another owner MUST NOT appear in results or influence pagination.
 
-### FR-004: Record an expense — MVP
+### FR-007: Retrieve a monthly budget summary
 
-An owner shall be able to record an expense with an amount, date, description, and owner-owned category.
+- A summary MUST provide total actual owner expenses for the selected month.
+- Overall spending MUST include categories without limits.
+- The summary MUST provide per-category spent amounts.
+- A category with a limit and zero expenses MUST appear with zero spent and the full limit remaining.
+- A category with expenses but no limit MUST show the actual expense total and an absent/null limit and remainder.
+- When an overall limit exists, show overall remaining = overall limit - all actual expenses.
+- When category limits exist, show category remaining = category limit - category spending.
+- Negative remaining values MUST be allowed.
+- When an overall limit exists, show allocated category limits and unallocated amount.
+- Overall over-allocation, overall overspending, and category overspending MUST be exposed as informational warnings.
 
-Acceptance boundaries:
+## M2 functional requirements
 
-- Amount calculations must not use floating-point types.
-- The referenced category must belong to the authenticated owner.
-- Missing or invalid required data is rejected.
-- Amount-sign conventions, edit/delete support, and behavior without a category limit remain `OPEN`.
+### FR-101: Manage category lifecycle and hierarchy
 
-### FR-005: Retrieve a monthly category summary — MVP
+- Allow owner-scoped category rename without changing identity or historical associations.
+- Archive categories instead of hard-deleting historical data.
+- Support one parent category and optional one-level-deep subcategories.
+- Allow expense assignment either to a parent or its child.
+- Aggregate parent summaries from directly assigned and child expenses.
+- Allow advisory limits at parent and child levels.
+- Warn when child allocations exceed a parent limit; do not block or mutate another limit.
 
-An owner shall be able to retrieve a category summary for a selected budget month.
+### FR-102: Edit and delete expenses
 
-The summary includes:
+- Allow an owner to correct or delete their own actual expense.
+- Recalculate affected category and monthly summaries when amount, category, or month changes.
+- Preserve owner isolation and reject future actual-expense dates.
 
-- Category identity.
-- Budget month.
-- Configured monthly limit.
-- Sum of matching expenses.
-- Remaining amount calculated as `limit - spent`.
+### FR-103: Income and opening balance
 
-Acceptance boundaries:
+- Record owner-scoped income independently of expense records.
+- Support a manually entered monthly opening balance.
+- Opening balance MUST NOT be classified as income.
+- Available funds = opening balance + monthly income.
+- Monthly spending limits remain optional, owner-defined, and independent from income.
+- Unused funds MUST NOT roll into another month automatically.
 
-- Only expenses from the requested owner, category, and budget month are included.
-- The month-boundary timezone and overspending representation remain `OPEN`.
-- The summary may be calculated synchronously; a broker or asynchronous projection is not required.
+### FR-104: Reuse monthly category limits
 
-## Non-functional requirements
+- Allow an explicit owner action to copy existing limits to another budget month.
+- Do not silently copy or change limits.
+- Document behavior for archived categories and existing destination limits before implementation.
 
-### NFR-001: Architecture — MVP
+## Later capabilities
 
-The target architecture is one deployable modular monolith with explicit domain boundaries. Spring Modulith will be introduced in a later implementation task and should verify module dependencies once configured.
+- `M3`: AWS hosting option ADR, Terraform infrastructure, deployment automation, basic logs/metrics/alerts, and AWS cost protection.
+- `M4`: Angular authentication, category/budget/expense views, and deployed API integration.
+- `M5`: owner-scoped CSV import, validation, result reporting, and S3 integration when justified.
+- `M6`: recurring, planned, and periodic obligations with amount, frequency, and due date.
+- `M7`: AI-assisted imported-expense classification.
+- `M8`: explainable AI budget proposals based on history, income, opening balance, and recurring/periodic obligations; owner approval is mandatory.
+- `M9`: notifications, deeper observability, asynchronous processing, or optional service extraction only after documented need.
 
-### NFR-002: Persistence — MVP target
+## M1 non-functional requirements
 
-The intended persistent store is one PostgreSQL database managed through Flyway migrations. Logical table ownership should remain visible even though modules share a physical database.
+### NFR-001: Architecture
 
-### NFR-003: Testability — MVP
+- One deployable Kotlin-first Spring Boot application and one PostgreSQL database.
+- Logical Spring Modulith modules: `categories`, `budget`, and `expenses`.
+- Each module MUST own its tables and persistence implementation.
+- Inter-module access MUST use explicit public interfaces.
+- Cross-module references MUST use identifiers, not shared JPA entity relationships.
+- Synchronous calls are the default; there is no mandatory broker or API Gateway.
 
-The implementation shall include automated tests for domain rules, the first end-to-end workflow, and cross-owner isolation. PostgreSQL integration tests should use Testcontainers once persistence is implemented.
+### NFR-002: Persistence and money
 
-### NFR-004: API contracts — MVP
+- PostgreSQL is the initial production-like relational database.
+- Flyway is the schema migration tool.
+- Monetary amounts MUST be exact decimals and restricted to PLN for M1.
+- Queries and indexes MUST respect owner/month/category boundaries.
 
-The API shall expose consistent validation errors and publish OpenAPI documentation for the complete first product flow. The exact endpoint shape will be finalized during implementation. A dedicated frontend is not required for the first milestone.
+### NFR-003: Security
 
-### NFR-005: Maintainability — MVP
+- Spring Security OAuth2 Resource Server MUST validate access tokens.
+- Secrets MUST NOT be committed.
+- Repository examples MUST use sanitized `.env.example` values.
+- A reproducible local environment MUST contain the application, PostgreSQL, Keycloak, and two preconfigured demo users.
 
-New implementation work should be divided into focused, reviewable changes suitable for approximately one-hour work sessions.
+### NFR-004: Quality and automated verification
 
-### NFR-006: Portfolio honesty — MVP
+- Unit tests MUST cover business calculations and warning behavior.
+- Integration tests MUST cover persistence and cross-owner isolation.
+- Spring Modulith tests MUST verify allowed dependencies and absence of cycles.
+- Testcontainers SHOULD provide reproducible PostgreSQL integration where appropriate.
+- GitHub Actions MUST run build, unit, integration, and architecture tests for pull requests.
 
-README, diagrams, and product documentation shall label current implementation, chosen target architecture, and deferred capabilities separately.
+### NFR-005: API and portfolio quality
 
-## Deferred capabilities
+- M1 MUST be demonstrable through a documented OpenAPI.
+- Validation and errors MUST be understandable without exposing private data.
+- Documentation MUST distinguish verified implementation from target architecture.
+- Tasks and pull requests SHOULD fit focused, reviewable work sessions.
+- Angular and AWS MUST NOT be described as complete before their milestones are delivered.
 
-Public self-registration, CSV import, AI proposals, recurring expenses, notifications, a dedicated frontend, cloud deployment, asynchronous messaging, and microservice extraction are `FUTURE`. They do not justify extra infrastructure in the first milestone.
+## Official references
 
-## References
-
-- [`../CONTEXT.md`](../CONTEXT.md): domain terms and unresolved decisions.
-- [`prd.md`](prd.md): product context and milestone rationale.
-- [`user_stories.md`](user_stories.md): testable user-facing scenarios.
+- [Spring Modulith verification](https://docs.spring.io/spring-modulith/reference/verification.html)
+- [Spring Security JWT Resource Server](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html)
+- [Testcontainers PostgreSQL](https://java.testcontainers.org/modules/databases/postgres/)
+- [Flyway migrations](https://documentation.red-gate.com/fd/migrations-271585107.html)

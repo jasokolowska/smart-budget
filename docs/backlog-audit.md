@@ -1,66 +1,87 @@
-# Legacy GitHub Issue Audit
+# GitHub Issue Backlog Alignment
 
-Status: **review proposal only**. No GitHub issue or GitHub Project field has been changed by this document.
+Status: **owner-approved issue reorganization**. Source: 37 previously open issues reviewed against the accepted product interview and `docs/roadmap.md`.
 
-Source: open issues in `jasokolowska/smart-budget`, inspected on 2026-08-18. There are **37 open issues**, plus the separate open pull request #89. Most issues were written for an earlier distributed-system concept.
+## Decision rules
 
-## Review categories
+- Preserve useful existing issues by updating titles, scope, and acceptance criteria.
+- Prefix active titles with the roadmap milestone, e.g. `[M1]`, `[M3]`, or `[M9][OPTIONAL]`.
+- Close only issues tied exclusively to rejected independent Gateway/Notification services or obsolete Gateway-specific AI routing.
+- Retain later CSV, Angular, AI, recurring, cloud, and observability work in the appropriate milestone.
+- Keep M1 restricted to the accepted owner-isolated budgeting backend.
+- Add narrowly scoped issues for missing architecture checks, product rules, M2 capabilities, Terraform/AWS decisions, and AI categorization.
 
-- `KEEP`: still useful with little or no conceptual change.
-- `REWRITE`: the underlying product/engineering concern is useful, but the issue currently assumes incorrect architecture or scope.
-- `DEFER`: potentially valuable after the first product milestone.
-- `REPLACE`: the task is tied to infrastructure or a service boundary that no longer exists in the selected architecture; close only after the owner approves a replacement or archival decision.
+## Existing issue disposition
 
-## Issue-by-issue review
-
-| Issue | Existing concern | Recommendation | Reason / proposed direction |
+| Issue | Milestone | Action | Approved direction |
 | --- | --- | --- | --- |
-| [#46](https://github.com/jasokolowska/smart-budget/issues/46) | Setup and repository hygiene | REWRITE | Scope to one repository, Gradle, documentation consistency, and the modular-monolith baseline. |
-| [#49](https://github.com/jasokolowska/smart-budget/issues/49) | Compose: two databases, RabbitMQ, Keycloak, Mailpit | REWRITE | Initial local infrastructure should contain the Smart Budget PostgreSQL database and Keycloak; remove the second application database, RabbitMQ, and Mailpit. |
-| [#51](https://github.com/jasokolowska/smart-budget/issues/51) | Keycloak realm, OIDC client, SPA scopes | REWRITE | Configure the smallest reproducible realm, API client, and two demonstration Owners needed for OIDC and OpenAPI authorization. Keep public self-registration disabled and remove assumptions about a dedicated SPA. |
-| [#52](https://github.com/jasokolowska/smart-budget/issues/52) | API Gateway epic | REPLACE | The first architecture has no independent API Gateway. |
-| [#53](https://github.com/jasokolowska/smart-budget/issues/53) | Gateway routes to services | REPLACE | There are no separately deployed services to route to. |
-| [#54](https://github.com/jasokolowska/smart-budget/issues/54) | Gateway proxy and cache for OpenAI | REPLACE | Neither a gateway nor AI integration belongs to the first milestone. |
-| [#55](https://github.com/jasokolowska/smart-budget/issues/55) | Gateway JWT resource server | REWRITE | Keep owner authentication and 401/403 behavior inside the single Spring application. |
-| [#56](https://github.com/jasokolowska/smart-budget/issues/56) | Transaction Service epic | REWRITE | Convert to a transaction/expense module epic focused on the first vertical slice. |
-| [#57](https://github.com/jasokolowska/smart-budget/issues/57) | Transaction/category database migrations | REWRITE | Keep Flyway migrations, but model one database and only MVP-owned tables. |
-| [#58](https://github.com/jasokolowska/smart-budget/issues/58) | CSV import | DEFER | Useful future capability, not required for manual-expense MVP. |
-| [#59](https://github.com/jasokolowska/smart-budget/issues/59) | Advanced transaction filtering | DEFER | Basic month/category retrieval may be needed, but advanced filters are not MVP acceptance criteria. |
-| [#60](https://github.com/jasokolowska/smart-budget/issues/60) | ATM flow and event publishing | DEFER | Cash-flow heuristics and a broker are outside the first milestone. |
-| [#61](https://github.com/jasokolowska/smart-budget/issues/61) | Budget Service epic with AI and recurring payments | REWRITE | Convert to a budgeting-module epic containing monthly category limits only. |
-| [#62](https://github.com/jasokolowska/smart-budget/issues/62) | AI-generated budget proposal | DEFER | AI can be evaluated after the core budgeting workflow works. |
-| [#63](https://github.com/jasokolowska/smart-budget/issues/63) | Subscribe to transaction-created broker events | REWRITE | Compute the first monthly summary through explicit synchronous module APIs; reconsider events only if justified. |
-| [#64](https://github.com/jasokolowska/smart-budget/issues/64) | Recurring payments and scheduling | DEFER | Not part of the first owner/category/limit/expense workflow. |
-| [#65](https://github.com/jasokolowska/smart-budget/issues/65) | Budget, recurring, preferences, and audit schema | REWRITE | Restrict the first schema to owner-scoped categories, limits, and expenses. |
-| [#66](https://github.com/jasokolowska/smart-budget/issues/66) | Notification Service epic | REPLACE | Independent notification service conflicts with the selected architecture; recreate a future feature only when needed. |
-| [#67](https://github.com/jasokolowska/smart-budget/issues/67) | Notification preferences and Mailpit | DEFER | Notifications are outside the first milestone. |
-| [#68](https://github.com/jasokolowska/smart-budget/issues/68) | Web push and VAPID | DEFER | Dedicated frontend/push infrastructure is out of scope. |
-| [#69](https://github.com/jasokolowska/smart-budget/issues/69) | Full Angular frontend epic | DEFER | Decide on a dedicated frontend only after the backend workflow is demonstrable. |
-| [#70](https://github.com/jasokolowska/smart-budget/issues/70) | Angular application skeleton | DEFER | Not needed to verify a backend-first MVP. |
-| [#71](https://github.com/jasokolowska/smart-budget/issues/71) | SPA Keycloak integration | DEFER | Keycloak is selected for the MVP API, but SPA login integration depends on a future dedicated frontend. |
-| [#72](https://github.com/jasokolowska/smart-budget/issues/72) | Frontend CSV upload | DEFER | Depends on both a dedicated frontend and CSV import. |
-| [#73](https://github.com/jasokolowska/smart-budget/issues/73) | Frontend transaction list | DEFER | Revisit after deciding whether a dedicated frontend is required. |
-| [#74](https://github.com/jasokolowska/smart-budget/issues/74) | Frontend AI budgeting view | DEFER | Both AI and a dedicated frontend are outside the first milestone. |
-| [#75](https://github.com/jasokolowska/smart-budget/issues/75) | Frontend recurring payments | DEFER | Recurring payments and a dedicated frontend are deferred. |
-| [#76](https://github.com/jasokolowska/smart-budget/issues/76) | Full frontend dashboard | DEFER | The MVP needs a monthly summary API, not a broad frontend dashboard. |
-| [#77](https://github.com/jasokolowska/smart-budget/issues/77) | Frontend notification settings | DEFER | Notifications and frontend work are not MVP requirements. |
-| [#78](https://github.com/jasokolowska/smart-budget/issues/78) | GitHub Actions build and tests | KEEP | Existing Gradle CI remains useful; review precise gaps before making a separate CI change. |
-| [#79](https://github.com/jasokolowska/smart-budget/issues/79) | Build and publish Docker images | DEFER | Container publishing follows a working application, not documentation cleanup. |
-| [#80](https://github.com/jasokolowska/smart-budget/issues/80) | Testcontainers for Postgres, RabbitMQ, Mailpit, Keycloak | REWRITE | Cover PostgreSQL persistence, JWT validation, and cross-owner isolation. Add a Keycloak-backed smoke test only where it proves realm/client integration; remove RabbitMQ and Mailpit. |
-| [#81](https://github.com/jasokolowska/smart-budget/issues/81) | Prometheus, OpenTelemetry, and observability | DEFER | Useful after the first product flow and deployment requirements exist. |
-| [#82](https://github.com/jasokolowska/smart-budget/issues/82) | OpenAPI for all services | REWRITE | Document one application API and the first budgeting workflow. |
-| [#83](https://github.com/jasokolowska/smart-budget/issues/83) | Legacy HP-001 through HP-016 acceptance scenarios | REWRITE | Replace with the five current owner/category/limit/expense/summary stories. |
-| [#84](https://github.com/jasokolowska/smart-budget/issues/84) | Releases, changelog, and published artifacts | DEFER | Revisit when there is a usable release candidate. |
-| [#85](https://github.com/jasokolowska/smart-budget/issues/85) | Category Service | REWRITE | Scope to an owner-isolated category capability inside the modular monolith; do not merge PR #89 wholesale. |
+| [#46](https://github.com/jasokolowska/smart-budget/issues/46) | M1 | UPDATE | Establish the Kotlin-first modular-monolith foundation |
+| [#49](https://github.com/jasokolowska/smart-budget/issues/49) | M1 | UPDATE | Run the backend, PostgreSQL, and Keycloak with Docker Compose |
+| [#51](https://github.com/jasokolowska/smart-budget/issues/51) | M1 | UPDATE | Configure Keycloak realm, OIDC client, and two demo owners |
+| [#52](https://github.com/jasokolowska/smart-budget/issues/52) | obsolete | CLOSE | An independent API Gateway and routing between separately deployed services contradict ADR 0001. JWT validation is handled directly by the modular-monolith backend in issue #55. |
+| [#53](https://github.com/jasokolowska/smart-budget/issues/53) | obsolete | CLOSE | There are no separately deployed transaction/budget/notification services to route to. The selected architecture exposes one Spring Boot application API. |
+| [#54](https://github.com/jasokolowska/smart-budget/issues/54) | obsolete | CLOSE | The product has no standalone Gateway. AI-assisted budgeting is preserved separately as issue #62 (M8), with provider/cache decisions deferred until justified. |
+| [#55](https://github.com/jasokolowska/smart-budget/issues/55) | M1 | UPDATE | Validate OIDC JWTs inside the Spring Boot resource server |
+| [#56](https://github.com/jasokolowska/smart-budget/issues/56) | M1 | UPDATE | Implement the owner-scoped expenses application module |
+| [#57](https://github.com/jasokolowska/smart-budget/issues/57) | M1 | UPDATE | Add owner-scoped category and expense Flyway migrations |
+| [#58](https://github.com/jasokolowska/smart-budget/issues/58) | M5 | UPDATE | Import owner-scoped expenses from CSV with row-level reporting |
+| [#59](https://github.com/jasokolowska/smart-budget/issues/59) | M1 | UPDATE | List monthly expenses with category filtering and bounded pagination |
+| [#60](https://github.com/jasokolowska/smart-budget/issues/60) | M9 | UPDATE | Evaluate cash-withdrawal classification and event processing |
+| [#61](https://github.com/jasokolowska/smart-budget/issues/61) | M1 | UPDATE | Implement monthly budgets, advisory limits, and summaries |
+| [#62](https://github.com/jasokolowska/smart-budget/issues/62) | M8 | UPDATE | Generate explainable AI budget proposals requiring owner approval |
+| [#63](https://github.com/jasokolowska/smart-budget/issues/63) | M1 | UPDATE | Calculate monthly summaries synchronously through public module APIs |
+| [#64](https://github.com/jasokolowska/smart-budget/issues/64) | M6 | UPDATE | Model recurring, planned, and periodic financial obligations |
+| [#65](https://github.com/jasokolowska/smart-budget/issues/65) | M1 | UPDATE | Add Flyway schema for owner-scoped monthly budgets and limits |
+| [#66](https://github.com/jasokolowska/smart-budget/issues/66) | obsolete | CLOSE | An independently deployed Notification Service contradicts the modular-monolith-first architecture. Optional owner-controlled notifications remain represented by issues #67, #68, and #77. |
+| [#67](https://github.com/jasokolowska/smart-budget/issues/67) | M9 | UPDATE | Evaluate owner-controlled notification preferences |
+| [#68](https://github.com/jasokolowska/smart-budget/issues/68) | M9 | UPDATE | Evaluate web-push notifications and subscription security |
+| [#69](https://github.com/jasokolowska/smart-budget/issues/69) | M4 | UPDATE | Build a focused Angular frontend for the deployed budgeting API |
+| [#70](https://github.com/jasokolowska/smart-budget/issues/70) | M4 | UPDATE | Create the minimal Angular application shell and routing |
+| [#71](https://github.com/jasokolowska/smart-budget/issues/71) | M4 | UPDATE | Integrate Angular OIDC authentication with Keycloak |
+| [#72](https://github.com/jasokolowska/smart-budget/issues/72) | M5 | UPDATE | Add Angular CSV upload and import-result review |
+| [#73](https://github.com/jasokolowska/smart-budget/issues/73) | M4 | UPDATE | Build the Angular expense list with month/category filtering |
+| [#74](https://github.com/jasokolowska/smart-budget/issues/74) | M8 | UPDATE | Review and approve explainable AI budget proposals in Angular |
+| [#75](https://github.com/jasokolowska/smart-budget/issues/75) | M6 | UPDATE | Manage recurring and periodic obligations in Angular |
+| [#76](https://github.com/jasokolowska/smart-budget/issues/76) | M4 | UPDATE | Build a focused monthly budget and expense dashboard |
+| [#77](https://github.com/jasokolowska/smart-budget/issues/77) | M9 | UPDATE | Add notification settings only after product validation |
+| [#78](https://github.com/jasokolowska/smart-budget/issues/78) | M1 | UPDATE | Run Gradle unit, integration, and architecture tests in GitHub Actions |
+| [#79](https://github.com/jasokolowska/smart-budget/issues/79) | M3 | UPDATE | Build and publish a deployable backend container image |
+| [#80](https://github.com/jasokolowska/smart-budget/issues/80) | M1 | UPDATE | Verify PostgreSQL integration and cross-owner isolation |
+| [#81](https://github.com/jasokolowska/smart-budget/issues/81) | M3 | UPDATE | Add deployment logs, essential metrics, alarms, and cost protection |
+| [#82](https://github.com/jasokolowska/smart-budget/issues/82) | M1 | UPDATE | Publish OpenAPI documentation for the single budgeting backend |
+| [#83](https://github.com/jasokolowska/smart-budget/issues/83) | M1 | UPDATE | Document and automate the approved budgeting acceptance scenarios |
+| [#84](https://github.com/jasokolowska/smart-budget/issues/84) | M9 | UPDATE | Define release/versioning practices for a usable product |
+| [#85](https://github.com/jasokolowska/smart-budget/issues/85) | M1 | UPDATE | Implement owner-scoped categories inside the modular monolith |
 
-## Suggested review sequence
+## New backlog coverage
 
-1. Approve or revise the product and architecture documents.
-2. Confirm whether each `REPLACE` item should be closed as obsolete.
-3. Decide whether each `REWRITE` item should be edited or replaced by a smaller fresh issue.
-4. Move `DEFER` items out of the immediate milestone without deleting product ideas.
-5. Keep the initial implementation backlog limited to the accepted first workflow and supporting quality/security tasks.
+- M1: Verify Spring Modulith boundaries and permitted module dependencies.
+- M1: Implement optional advisory overall monthly spending limits.
+- M1: Implement advisory category limits and allocation warnings.
+- M1: Record positive PLN expenses with actual-date validation.
+- M2: Rename and archive categories without losing expense history.
+- M2: Add optional two-level categories and aggregated parent summaries.
+- M2: Edit and delete owner-scoped expenses with summary recalculation.
+- M2: Add income and manual opening balance as separate concepts.
+- M2: Copy category spending limits to another month on explicit request.
+- M3: Compare AWS hosting options and record the selected architecture in an ADR.
+- M3: Provision the selected AWS infrastructure with Terraform.
+- M5: Evaluate S3-backed CSV storage and justified asynchronous processing.
+- M6: Model annual and seasonal obligations for future budget planning.
+- M7: Suggest expense categories for imported CSV transactions using AI.
 
-## GitHub Project limitation
+## What the roadmap prefixes mean
 
-The available GitHub integration can inspect and modify repository issues, but it does not expose direct operations for GitHub Projects v2 boards, custom project fields, or project-item statuses. Issue edits may appear in a project when those issues are already included, but board-specific changes require a GitHub Projects-capable integration or manual action.
+- **M1:** secure modular-monolith budgeting workflow.
+- **M2:** richer category hierarchy, lifecycle, income, opening balance, and reusable monthly planning.
+- **M3:** evidence-led AWS deployment, Terraform, operational monitoring, and cost control.
+- **M4:** minimal Angular frontend.
+- **M5:** CSV ingestion and justified cloud-assisted processing.
+- **M6:** recurring, planned, and periodic obligations.
+- **M7:** AI-assisted expense categorization.
+- **M8:** explainable, owner-approved AI budget proposals.
+- **M9:** optional features justified by evidence.
+
+## GitHub Projects and repository milestone limitation
+
+The connected repository integration can update issues and pull requests, but it does not expose direct GitHub Projects v2 board fields, project-item statuses, or creation of GitHub milestone objects. Roadmap prefixes keep each issue sortable and searchable even without project-board field access. Issues already present on a board reflect their updated repository titles and bodies.
