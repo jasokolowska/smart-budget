@@ -1,0 +1,14 @@
+package com.sokolowska.transactions.domain.repository;
+
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(basePackages = {"com.sokolowska.transactions"})
+@EnableJpaRepositories(basePackages = {"com.sokolowska.transactions"})
+@EntityScan(basePackages = {"com.sokolowska.transactions"})
+class ModuleIntegrationTestConfig {}

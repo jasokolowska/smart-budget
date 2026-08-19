@@ -130,3 +130,4 @@ This project is licensed under the MIT License — see the `LICENSE` file.
 Contact
 -------
 To contribute, open an issue or submit a pull request in this repository.
+

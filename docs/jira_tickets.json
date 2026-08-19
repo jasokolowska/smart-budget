@@ -1,0 +1,573 @@
+[
+  {
+    "title": "SB-101: Standardize userId type across all modules",
+    "labels": ["backend", "technical-debt", "P0", "M"],
+    "body": "Audit all modules to identify userId type inconsistencies. Currently `TransactionEntity` uses `String userId` while `CategoryEntity` uses `UUID userId`. Decide on standard type (recommend String for Keycloak compatibility). Update `TransactionEntity`, `CategoryEntity`, and all repositories to use consistent type. Update database migrations if needed."
+  },
+  {
+    "title": "SB-102: Fix BudgetRepository type mismatch (Long → UUID)",
+    "labels": ["backend", "technical-debt", "P0", "S"],
+    "body": "The `BudgetRepository` interface in the transaction module uses `Long` as the ID type, but the `Budget` entity uses `UUID`. Update the repository interface to use `UUID` instead of `Long` to align with the domain model."
+  },
+  {
+    "title": "SB-103: Add database foreign key constraints",
+    "labels": ["backend", "database", "P0", "M"],
+    "body": "Add foreign key constraints to ensure referential integrity: `transactions.category_id` → `categories.id`, `budget_items.category_id` → `categories.id`, `budget_items.budget_id` → `budgets.id`. Create Flyway migration to add these constraints."
+  },
+  {
+    "title": "SB-104: Implement global exception handler",
+    "labels": ["backend", "code-quality", "P1", "M"],
+    "body": "Create a `@ControllerAdvice` class with standardized error responses. Handle common exceptions (404 Not Found, 400 Bad Request, 500 Internal Server Error). Return consistent error DTO format with error code, message, and timestamp."
+  },
+  {
+    "title": "SB-105: Add Bean Validation to all DTOs",
+    "labels": ["backend", "code-quality", "P1", "M"],
+    "body": "Add `@Valid` annotations to all controller endpoints. Add validation annotations (`@NotNull`, `@Size`, `@Min`/`@Max`, `@Email`, etc.) to all request DTOs. Ensure proper error messages are returned for validation failures."
+  },
+  {
+    "title": "SB-106: Standardize service layer naming (service/ vs services/)",
+    "labels": ["backend", "code-quality", "P1", "S"],
+    "body": "The categories module uses `services/` directory while the transaction module uses `service/`. Refactor categories module to use `service/` directory to match transaction module and maintain consistency."
+  },
+  {
+    "title": "SB-107: Add API documentation (Swagger/OpenAPI)",
+    "labels": ["backend", "documentation", "P1", "M"],
+    "body": "Configure SpringDoc OpenAPI (Swagger UI). Add `@Operation`, `@ApiResponse`, and `@Schema` annotations to all controllers and DTOs. Expose Swagger UI at `/swagger-ui.html` and OpenAPI spec at `/v3/api-docs`."
+  },
+  {
+    "title": "SB-108: Add Keycloak to docker-compose.yml",
+    "labels": ["backend", "authentication", "P0", "S"],
+    "body": "Add Keycloak container to `docker-compose.yml`. Configure Keycloak with PostgreSQL database. Set up realm configuration, create client for the application. Configure environment variables for Keycloak admin credentials and realm settings."
+  },
+  {
+    "title": "SB-109: Configure Spring Security with OAuth2 Resource Server",
+    "labels": ["backend", "authentication", "P0", "L"],
+    "body": "Add `spring-boot-starter-oauth2-resource-server` dependency. Configure Spring Security filter chain to validate JWT tokens. Set up `SecurityFilterChain` bean with OAuth2 resource server configuration. Configure JWT decoder with Keycloak issuer URI."
+  },
+  {
+    "title": "SB-110: Implement JWT token validation",
+    "labels": ["backend", "authentication", "P0", "M"],
+    "body": "Create JWT decoder configuration. Validate token signature using Keycloak public keys. Validate token expiration, issuer claims, and audience. Handle token validation errors gracefully with appropriate HTTP status codes."
+  },
+  {
+    "title": "SB-111: Extract user context from JWT",
+    "labels": ["backend", "authentication", "P0", "M"],
+    "body": "Create `UserContext` service to extract user information from JWT claims. Extract `userId`/`sub` from JWT token. Make user context available via `SecurityContext` or custom `Authentication` object. Provide utility methods to get current user ID."
+  },
+  {
+    "title": "SB-112: Update all controllers to use SecurityContext",
+    "labels": ["backend", "authentication", "P0", "M"],
+    "body": "Remove `userId` parameters from all controller methods. Inject `UserContext` service instead. Update `TransactionsController` and `CategoryController` to extract user ID from security context. Ensure all endpoints are properly secured."
+  },
+  {
+    "title": "SB-113: Add security tests (JWT validation, unauthorized access)",
+    "labels": ["backend", "authentication", "testing", "P0", "M"],
+    "body": "Write integration tests with mock JWT tokens. Test unauthorized access scenarios (missing token, invalid token, expired token). Test authorized access with valid tokens. Use `@WithMockJwt` or similar test utilities."
+  },
+  {
+    "title": "SB-114: Create Flyway migration for budgets table",
+    "labels": ["backend", "database", "budget", "P0", "S"],
+    "body": "Create V4 Flyway migration to create `budgets` table. Include fields: `id` (UUID), `user_id` (VARCHAR), `status` (ENUM: DRAFT, PROPOSED, APPROVED, REJECTED), `period` (DATE range or month/year), `last_modified_at` (TIMESTAMP), `last_modified_by` (VARCHAR). Add indexes on `user_id` and `period`."
+  },
+  {
+    "title": "SB-115: Create Flyway migration for budget_items table",
+    "labels": ["backend", "database", "budget", "P0", "S"],
+    "body": "Create V5 Flyway migration to create `budget_items` table. Include fields: `id` (UUID), `budget_id` (UUID, FK to budgets), `category_id` (UUID, FK to categories), `limit` (DECIMAL), `spent` (DECIMAL, default 0). Add indexes on `budget_id` and `category_id`."
+  },
+  {
+    "title": "SB-116: Add audit fields to transactions/categories tables",
+    "labels": ["backend", "database", "P0", "S"],
+    "body": "Create V6 Flyway migration to add `created_at` and `updated_at` timestamp fields to `categories` table (transactions table already has these). Add default values and update triggers if needed."
+  },
+  {
+    "title": "SB-117: Complete BudgetRepository implementation",
+    "labels": ["backend", "budget", "P0", "M"],
+    "body": "Fix UUID type in `BudgetRepository` interface. Add methods: `findByUserIdAndPeriod`, `findByUserIdAndStatus`, `findByUserIdOrderByPeriodDesc`. Ensure all methods use correct UUID type and proper query annotations."
+  },
+  {
+    "title": "SB-118: Implement BudgetService (CRUD operations)",
+    "labels": ["backend", "budget", "P0", "L"],
+    "body": "Create `BudgetService` with methods: `createBudget`, `updateBudget`, `approveBudget`, `rejectBudget`, `getBudgetById`, `getBudgetsByUserId`. Handle `BudgetStatus` transitions (DRAFT → PROPOSED → APPROVED/REJECTED). Implement business logic for budget validation."
+  },
+  {
+    "title": "SB-119: Implement BudgetItemService",
+    "labels": ["backend", "budget", "P0", "M"],
+    "body": "Create service for managing budget items. Methods: `addItem`, `updateItem`, `removeItem`, `getItemsByBudgetId`. Handle item validation (ensure limit > 0, category exists). Update spent amounts when transactions are added."
+  },
+  {
+    "title": "SB-120: Create BudgetController (REST API)",
+    "labels": ["backend", "budget", "P0", "M"],
+    "body": "Create REST controller with endpoints: `GET /api/budgets` (list user's budgets), `GET /api/budgets/{id}` (get budget by ID), `POST /api/budgets` (create budget), `PUT /api/budgets/{id}` (update budget), `POST /api/budgets/{id}/approve` (approve budget). Add proper security and validation."
+  },
+  {
+    "title": "SB-121: Add budget validation logic",
+    "labels": ["backend", "budget", "P0", "M"],
+    "body": "Implement validation: budget period must be valid (not in past for new budgets), budget items must have valid category IDs, total of item limits should not exceed reasonable threshold (optional). Return validation errors with clear messages."
+  },
+  {
+    "title": "SB-122: Implement budget utilization calculation",
+    "labels": ["backend", "budget", "P0", "M"],
+    "body": "Calculate spent amount per category from transactions for the current budget period. Compute percentage used (spent / limit * 100). Handle edge cases (zero limit, negative amounts). Return utilization data for dashboard."
+  },
+  {
+    "title": "SB-123: Implement 3-month median calculation",
+    "labels": ["backend", "budget", "AI", "P0", "M"],
+    "body": "Query last 3 months of transactions grouped by category. Calculate median spending per category. Handle months with no transactions. Return aggregated data for AI proposal generation. Consider seasonality in calculation."
+  },
+  {
+    "title": "SB-124: Add budget monitoring endpoint",
+    "labels": ["backend", "budget", "P0", "M"],
+    "body": "Create `GET /api/budgets/{id}/status` endpoint. Return budget utilization, list of over-budget categories (spent > limit), alerts/warnings. Include percentage used per category. Format response for dashboard consumption."
+  },
+  {
+    "title": "SB-125: Implement CSV parser (Apache Commons CSV)",
+    "labels": ["backend", "transactions", "CSV", "P0", "M"],
+    "body": "Add Apache Commons CSV dependency. Implement CSV parser for format: `date,amount,description[,category]` with comma separator. Parse dates in expected format (e.g., YYYY-MM-DD). Handle quoted fields and escape characters. Return list of parsed transaction records."
+  },
+  {
+    "title": "SB-126: Create file upload endpoint",
+    "labels": ["backend", "transactions", "CSV", "P0", "M"],
+    "body": "Create `POST /api/transactions/import/csv` endpoint with `multipart/form-data` support. Validate file type (CSV only) and file size (e.g., max 10MB). Return appropriate error messages for invalid files. Handle file upload using Spring's `MultipartFile`."
+  },
+  {
+    "title": "SB-127: Implement transaction batch insert",
+    "labels": ["backend", "transactions", "CSV", "P0", "M"],
+    "body": "Process CSV rows and create `Transaction` entities. Use JPA batch insert for performance (configure `spring.jpa.properties.hibernate.jdbc.batch_size`). Handle errors gracefully - continue processing valid rows, collect errors for invalid rows. Return import summary (successful count, error count, error details)."
+  },
+  {
+    "title": "SB-128: Add CSV import validation",
+    "labels": ["backend", "transactions", "CSV", "P0", "S"],
+    "body": "Validate CSV format: required columns (date, amount, description), date format validation, amount format validation (numeric, can be negative). Return detailed error messages for each validation failure. Validate file encoding (UTF-8)."
+  },
+  {
+    "title": "SB-129: Implement dictionary-based categorization",
+    "labels": ["backend", "transactions", "categorization", "P0", "L"],
+    "body": "Create category matching service. Build dictionary of keywords/phrases for each category. Match transaction descriptions to category keywords using fuzzy matching or exact matching. Target 85% accuracy. Handle case-insensitive matching. Allow category keywords to be configurable (stored in DB or config file)."
+  },
+  {
+    "title": "SB-130: Handle uncategorized transactions",
+    "labels": ["backend", "transactions", "categorization", "P0", "S"],
+    "body": "When categorization fails or no category is provided in CSV, assign \"Nieprzypisana\" (Unassigned) category. Ensure this default category exists in database. Allow manual re-categorization later via transaction update endpoint."
+  },
+  {
+    "title": "SB-131: Detect ATM withdrawal transactions",
+    "labels": ["backend", "transactions", "ATM", "P0", "M"],
+    "body": "Identify ATM withdrawals from transaction descriptions using pattern matching (keywords: \"bankomat\", \"ATM\", \"wypłata\", \"withdrawal\"). Flag transaction with `isAtmWithdrawal` boolean field. Store pattern matching logic in service for easy maintenance."
+  },
+  {
+    "title": "SB-132: Create ATM flow endpoint",
+    "labels": ["backend", "transactions", "ATM", "P0", "M"],
+    "body": "Create `POST /api/transactions/{id}/atm-split` endpoint. Accept array of split items (category, amount). Split ATM withdrawal transaction into multiple child transactions with different categories. Link child transactions to parent transaction. Validate total split amount equals withdrawal amount."
+  },
+  {
+    "title": "SB-133: Implement split-to-grosz logic",
+    "labels": ["backend", "transactions", "ATM", "P0", "M"],
+    "body": "Allow splitting withdrawal amount to grosz (0.01 PLN) precision. Validate that sum of split amounts equals original withdrawal amount exactly. Handle rounding if needed. Create child transactions with proper amounts and categories. Update parent transaction to mark as split."
+  },
+  {
+    "title": "SB-134: Add date range filtering to transactions",
+    "labels": ["backend", "transactions", "filtering", "P0", "M"],
+    "body": "Add `fromDate` and `toDate` query parameters to `GET /api/transactions` endpoint. Implement JPA Specification or Criteria API for date filtering. Support inclusive date ranges. Handle timezone considerations. Add validation for date format."
+  },
+  {
+    "title": "SB-135: Add category multi-select filtering (OR logic)",
+    "labels": ["backend", "transactions", "filtering", "P0", "M"],
+    "body": "Add `categoryIds` query parameter (array of category IDs) to `GET /api/transactions`. Filter transactions matching ANY of the provided categories (OR logic). Use JPA `IN` clause or Specification. Handle empty array (return all transactions)."
+  },
+  {
+    "title": "SB-136: Add search functionality (description search)",
+    "labels": ["backend", "transactions", "filtering", "P0", "S"],
+    "body": "Add `search` query parameter to `GET /api/transactions`. Filter transactions where description contains the search text (case-insensitive). Use JPA `LIKE` query or full-text search. Support partial matching."
+  },
+  {
+    "title": "SB-137: Add pagination to transaction list",
+    "labels": ["backend", "transactions", "filtering", "P0", "S"],
+    "body": "Add `page` and `size` query parameters to `GET /api/transactions`. Return `Page<Transaction>` with total count, total pages, current page. Use Spring Data's `Pageable` interface. Set reasonable default page size (e.g., 20)."
+  },
+  {
+    "title": "SB-138: Implement current balance calculation",
+    "labels": ["backend", "dashboard", "P0", "M"],
+    "body": "Calculate current balance from all user transactions: sum of income transactions minus sum of expense transactions. Handle different transaction types correctly. Consider transaction date (only include transactions up to current date). Return balance in PLN with proper formatting."
+  },
+  {
+    "title": "SB-139: Create dashboard DTO",
+    "labels": ["backend", "dashboard", "P0", "S"],
+    "body": "Create `DashboardDto` record/class with fields: `balance` (BigDecimal), `budgetUtilization` (List<CategoryUtilization>), `upcomingPayments` (List<RecurringExpense>), `recentTransactions` (List<Transaction>). Include proper serialization annotations."
+  },
+  {
+    "title": "SB-140: Implement GET /dashboard endpoint",
+    "labels": ["backend", "dashboard", "P0", "M"],
+    "body": "Create `GET /api/dashboard` endpoint. Aggregate data from transactions, budgets, and recurring expenses services. Calculate balance, budget utilization, upcoming payments (7 days), recent transactions (last 5). Return `DashboardDto`. Optimize queries for performance."
+  },
+  {
+    "title": "SB-141: Implement budget utilization per category",
+    "labels": ["backend", "dashboard", "budget", "P0", "M"],
+    "body": "Calculate spent vs limit for each category in active budget. Return percentages and absolute amounts. Include category name, limit, spent, percentage used. Format for dashboard display. Handle categories with no spending (0%)."
+  },
+  {
+    "title": "SB-142: Implement recent transactions endpoint",
+    "labels": ["backend", "dashboard", "transactions", "P0", "S"],
+    "body": "Create `GET /api/transactions/recent?limit=5` endpoint. Return last N transactions ordered by date descending. Include transaction details (date, amount, description, category). Support configurable limit parameter."
+  },
+  {
+    "title": "SB-143: Add savings icon logic to transactions",
+    "labels": ["backend", "dashboard", "transactions", "P0", "S"],
+    "body": "Identify savings transactions (positive amounts, specific categories like \"Oszczędności\", \"Savings\"). Add `isSavings` boolean flag to transaction DTO. Use category-based logic or amount-based logic. Return icon indicator in API response."
+  },
+  {
+    "title": "SB-144: Design recurring expense domain model",
+    "labels": ["backend", "recurring-expenses", "P0", "M"],
+    "body": "Design `RecurringExpense` entity with fields: `id` (UUID), `userId` (String), `amount` (BigDecimal), `description` (String), `categoryId` (UUID), `frequency` (ENUM: MONTHLY, WEEKLY), `nextPaymentDate` (LocalDate), `createdAt`, `updatedAt`. Consider additional fields like `isActive` flag."
+  },
+  {
+    "title": "SB-145: Create Flyway migration for recurring_expenses table",
+    "labels": ["backend", "recurring-expenses", "database", "P0", "S"],
+    "body": "Create V7 Flyway migration to create `recurring_expenses` table with all fields from domain model. Add indexes on `user_id` and `next_payment_date` for query performance. Add foreign key to `categories` table."
+  },
+  {
+    "title": "SB-146: Create RecurringExpenseEntity (JPA)",
+    "labels": ["backend", "recurring-expenses", "P0", "S"],
+    "body": "Create JPA entity `RecurringExpenseEntity` with proper annotations (`@Entity`, `@Table`, `@Id`, `@Column`). Add relationships to `CategoryEntity` using `@ManyToOne`. Include JPA lifecycle callbacks for `createdAt`/`updatedAt`."
+  },
+  {
+    "title": "SB-147: Implement RecurringExpenseRepository",
+    "labels": ["backend", "recurring-expenses", "P0", "S"],
+    "body": "Create Spring Data JPA repository interface. Add methods: `findByUserId`, `findByUserIdAndNextPaymentDateBetween`, `findByUserIdAndIsActiveTrue`. Use proper query methods or `@Query` annotations."
+  },
+  {
+    "title": "SB-148: Implement RecurringExpenseService (CRUD)",
+    "labels": ["backend", "recurring-expenses", "P0", "M"],
+    "body": "Create service with methods: `createRecurringExpense`, `updateRecurringExpense`, `deleteRecurringExpense`, `getRecurringExpenseById`, `getRecurringExpensesByUserId`. Calculate next payment date based on frequency when creating/updating. Handle date calculations (monthly adds 1 month, weekly adds 7 days)."
+  },
+  {
+    "title": "SB-149: Create RecurringExpenseController",
+    "labels": ["backend", "recurring-expenses", "P0", "M"],
+    "body": "Create REST controller with endpoints: `GET /api/recurring-expenses` (list user's recurring expenses), `POST /api/recurring-expenses` (create), `PUT /api/recurring-expenses/{id}` (update), `DELETE /api/recurring-expenses/{id}` (delete). Add proper security, validation, and error handling."
+  },
+  {
+    "title": "SB-150: Implement \"Mark as Paid\" functionality",
+    "labels": ["backend", "recurring-expenses", "P0", "M"],
+    "body": "Create `POST /api/recurring-expenses/{id}/mark-paid` endpoint. Update `nextPaymentDate` based on frequency (add 1 month for monthly, 7 days for weekly). Optionally create a transaction record for the payment. Return updated recurring expense with new next payment date."
+  },
+  {
+    "title": "SB-151: Implement next payment calculation",
+    "labels": ["backend", "recurring-expenses", "P0", "M"],
+    "body": "Implement logic to calculate next payment date based on frequency. For MONTHLY: add 1 month to current `nextPaymentDate`. For WEEKLY: add 7 days. Handle edge cases (month-end dates, leap years). Use Java `LocalDate` API for date arithmetic."
+  },
+  {
+    "title": "SB-152: Implement upcoming payments query (7 days)",
+    "labels": ["backend", "recurring-expenses", "dashboard", "P0", "S"],
+    "body": "Query recurring expenses where `nextPaymentDate` is within 7 days from today. Use repository method `findByUserIdAndNextPaymentDateBetween`. Return list sorted by payment date ascending. Used by dashboard endpoint."
+  },
+  {
+    "title": "SB-153: Add RabbitMQ to docker-compose.yml",
+    "labels": ["backend", "notifications", "infrastructure", "P0", "S"],
+    "body": "Add RabbitMQ container to `docker-compose.yml`. Configure with management plugin enabled. Create initial exchanges and queues for notifications: `notifications.exchange`, `notifications.queue`, `budget-alerts.queue`, `payment-reminders.queue`. Set up bindings."
+  },
+  {
+    "title": "SB-154: Configure Spring AMQP",
+    "labels": ["backend", "notifications", "infrastructure", "P0", "M"],
+    "body": "Add `spring-boot-starter-amqp` dependency. Configure `ConnectionFactory` with RabbitMQ connection details. Create `@Configuration` class to define exchanges, queues, and bindings. Set up message converters (JSON)."
+  },
+  {
+    "title": "SB-155: Create notification domain model",
+    "labels": ["backend", "notifications", "P0", "M"],
+    "body": "Create `Notification` entity with fields: `id` (UUID), `userId` (String), `type` (ENUM: BUDGET_ALERT, RECURRING_PAYMENT), `channel` (ENUM: EMAIL, WEB_PUSH), `status` (ENUM: PENDING, SENT, FAILED), `message` (String), `createdAt`, `sentAt`. Consider additional metadata fields."
+  },
+  {
+    "title": "SB-156: Create Flyway migration for notification_preferences table",
+    "labels": ["backend", "notifications", "database", "P0", "S"],
+    "body": "Create V8 Flyway migration to create `notification_preferences` table. Fields: `user_id` (VARCHAR, PK), `email_enabled` (BOOLEAN, default true), `web_push_enabled` (BOOLEAN, default true), `global_enabled` (BOOLEAN, default true). Add unique constraint on `user_id`."
+  },
+  {
+    "title": "SB-157: Implement NotificationService",
+    "labels": ["backend", "notifications", "P0", "L"],
+    "body": "Create service to send notifications via email and web push. Methods: `sendNotification`, `sendEmail`, `sendWebPush`. Respect user preferences (check `global_enabled`, `email_enabled`, `web_push_enabled`). Handle failures gracefully. Log notification attempts."
+  },
+  {
+    "title": "SB-158: Implement email service (Mailpit for dev)",
+    "labels": ["backend", "notifications", "P0", "M"],
+    "body": "Configure email service using Mailpit for development (or AWS SES for production). Create email templates for different notification types (budget alerts, payment reminders). Send HTML emails with proper formatting. Handle email sending errors."
+  },
+  {
+    "title": "SB-159: Implement web push service",
+    "labels": ["backend", "notifications", "P0", "XL"],
+    "body": "Set up web push protocol. Generate and manage VAPID keys. Implement subscription management (store user subscriptions in database). Create service to send push notifications. Handle subscription expiration and renewal. Integrate with frontend subscription API."
+  },
+  {
+    "title": "SB-160: Create notification preferences API",
+    "labels": ["backend", "notifications", "P0", "M"],
+    "body": "Create endpoints: `GET /api/notification-preferences` (get user preferences), `PUT /api/notification-preferences` (update preferences). Allow users to enable/disable email, web push, or all notifications. Validate preference updates."
+  },
+  {
+    "title": "SB-161: Implement event-driven notification triggers",
+    "labels": ["backend", "notifications", "P0", "M"],
+    "body": "Publish events to RabbitMQ when budget overrun occurs or recurring payment is due. Create event consumers that listen to queues and trigger notifications. Use Spring AMQP `@RabbitListener`. Decouple notification sending from business logic."
+  },
+  {
+    "title": "SB-162: Implement budget limit alert trigger",
+    "labels": ["backend", "notifications", "budget", "P0", "M"],
+    "body": "Monitor budget utilization (can be triggered on transaction creation or scheduled job). When category exceeds limit (spent > limit), publish `BudgetAlertEvent` to RabbitMQ. Event consumer sends notification via `NotificationService`. Include category name and overage amount in notification."
+  },
+  {
+    "title": "SB-163: Implement recurring payment reminder (-3 days)",
+    "labels": ["backend", "notifications", "recurring-expenses", "P0", "M"],
+    "body": "Create scheduled job (using `@Scheduled`) to check for upcoming recurring payments. Query payments due in 3 days. Publish `PaymentReminderEvent` to RabbitMQ for each payment. Event consumer sends reminder notification. Cancel reminder if payment is marked as paid before due date."
+  },
+  {
+    "title": "SB-164: Implement recurring payment reminder (due date)",
+    "labels": ["backend", "notifications", "recurring-expenses", "P0", "M"],
+    "body": "Create scheduled job to check for recurring payments due today. Publish `PaymentDueEvent` to RabbitMQ. Send reminder notification. Cancel notification if payment is marked as paid. Handle timezone considerations for due date calculation."
+  },
+  {
+    "title": "SB-165: Set up OpenAI client library",
+    "labels": ["backend", "AI", "P0", "S"],
+    "body": "Add OpenAI Java SDK dependency (or use HTTP client with OpenAI API). Configure API key from environment variables. Set up client configuration with proper timeout and retry settings. Create service class for OpenAI interactions."
+  },
+  {
+    "title": "SB-166: Implement transaction history aggregation",
+    "labels": ["backend", "AI", "budget", "P0", "M"],
+    "body": "Query last 3 months of transactions grouped by category. Calculate median spending per category, total spending, average spending. Handle months with no transactions gracefully. Return aggregated data structure for AI prompt. Consider seasonality indicators."
+  },
+  {
+    "title": "SB-167: Create AI prompt for budget generation",
+    "labels": ["backend", "AI", "budget", "P0", "M"],
+    "body": "Design prompt template for GPT-4o. Include: transaction history summary, median spending per category, seasonality hints, requirement for ≤30 categories, sanity-check rules (>30% deviation warning). Format prompt as JSON or structured text. Test prompt with sample data."
+  },
+  {
+    "title": "SB-168: Implement AI budget proposal generation",
+    "labels": ["backend", "AI", "budget", "P0", "XL"],
+    "body": "Create `POST /api/budgets/ai-proposal` endpoint. Call GPT-4o API with transaction history and prompt. Parse AI response (JSON format expected). Create `Budget` entity with status PROPOSED. Create `BudgetItem` entities for each category. Handle AI API errors and timeouts. Return budget proposal with items."
+  },
+  {
+    "title": "SB-169: Implement sanity-check logic (>30% deviation)",
+    "labels": ["backend", "AI", "budget", "P0", "M"],
+    "body": "Compare AI-proposed budget limits to 3-month median spending per category. Calculate percentage deviation. Flag categories with >30% deviation (either increase or decrease). Return warnings in API response. Require user confirmation before saving budget with flagged categories."
+  },
+  {
+    "title": "SB-170: Implement 24-hour caching for AI proposals",
+    "labels": ["backend", "AI", "budget", "P0", "M"],
+    "body": "Cache AI proposals per user for 24 hours. Store in database or Redis. Check cache before calling OpenAI API. Return cached result if available and not expired. Invalidate cache when user generates new proposal or after 24 hours. Reduce API costs and improve response time."
+  },
+  {
+    "title": "SB-171: Create Spring Cloud Gateway module",
+    "labels": ["backend", "infrastructure", "API-Gateway", "P0", "L"],
+    "body": "Create new Gradle module for API Gateway. Add `spring-cloud-starter-gateway` dependency. Configure as separate Spring Boot application. Add to `docker-compose.yml`. Set up basic routing configuration. Configure to run on different port than backend services."
+  },
+  {
+    "title": "SB-172: Configure API Gateway routes",
+    "labels": ["backend", "infrastructure", "API-Gateway", "P0", "M"],
+    "body": "Configure routes in API Gateway: route `/api/*` to backend services. Set up load balancing if multiple backend instances. Add CORS headers for frontend. Configure timeouts and retry logic. Add request/response logging."
+  },
+  {
+    "title": "SB-173: Move JWT validation to API Gateway",
+    "labels": ["backend", "infrastructure", "API-Gateway", "authentication", "P0", "M"],
+    "body": "Configure JWT validation at API Gateway level using Spring Cloud Gateway filters. Validate token before forwarding to backend. Extract user context and forward as headers (e.g., `X-User-Id`). Remove duplicate JWT validation from backend services (simplify backend security config)."
+  },
+  {
+    "title": "SB-174: Configure Micrometer metrics",
+    "labels": ["backend", "infrastructure", "monitoring", "P1", "M"],
+    "body": "Add Micrometer dependencies (`micrometer-registry-prometheus`). Expose `/actuator/metrics` endpoint. Configure basic application metrics (HTTP requests, database queries, JVM metrics). Add custom metrics for business logic (e.g., budget generation count, CSV import count)."
+  },
+  {
+    "title": "SB-175: Set up Prometheus scraping",
+    "labels": ["backend", "infrastructure", "monitoring", "P1", "S"],
+    "body": "Add Prometheus container to `docker-compose.yml`. Configure `prometheus.yml` to scrape metrics from application's `/actuator/prometheus` endpoint. Set up scrape intervals. Configure Prometheus to run on port 9090."
+  },
+  {
+    "title": "SB-176: Add OpenTelemetry tracing",
+    "labels": ["backend", "infrastructure", "monitoring", "P1", "M"],
+    "body": "Configure OpenTelemetry for distributed tracing. Add OpenTelemetry dependencies. Instrument HTTP requests, database queries, and external API calls (OpenAI). Integrate with Jaeger or Zipkin for trace visualization. Add trace context propagation."
+  },
+  {
+    "title": "SB-177: Initialize Angular 18 project",
+    "labels": ["frontend", "setup", "P0", "M"],
+    "body": "Create Angular 18 project in `client/` directory using Angular CLI. Configure TypeScript, ESLint, Prettier. Set up project structure with proper folder organization. Configure build and development scripts. Add to workspace root if needed."
+  },
+  {
+    "title": "SB-178: Set up routing and navigation",
+    "labels": ["frontend", "setup", "P0", "M"],
+    "body": "Configure Angular Router. Create basic routes: `/login`, `/dashboard`, `/transactions`, `/budgets`, `/recurring-expenses`, `/settings`. Set up route guards for protected routes. Create navigation component with menu/links. Configure route lazy loading if needed."
+  },
+  {
+    "title": "SB-179: Configure Angular Material or Tailwind CSS",
+    "labels": ["frontend", "setup", "UI", "P0", "M"],
+    "body": "Add UI component library (Angular Material recommended for Angular). Set up theme configuration (colors, typography). Create base layout components (header, sidebar, footer). Configure responsive design breakpoints. Set up global styles."
+  },
+  {
+    "title": "SB-180: Set up HTTP client and API service",
+    "labels": ["frontend", "setup", "P0", "M"],
+    "body": "Configure Angular `HttpClient`. Create base API service with API base URL configuration. Add HTTP interceptors for JWT token injection. Create error handling interceptor. Set up environment configuration (dev/prod API URLs)."
+  },
+  {
+    "title": "SB-181: Create login page with Keycloak integration",
+    "labels": ["frontend", "authentication", "P0", "L"],
+    "body": "Create login component with Keycloak OAuth2 flow. Redirect user to Keycloak login page. Handle OAuth callback with authorization code. Exchange code for tokens. Store JWT token in localStorage or secure storage. Redirect to dashboard on successful login. Handle login errors."
+  },
+  {
+    "title": "SB-182: Implement authentication service",
+    "labels": ["frontend", "authentication", "P0", "M"],
+    "body": "Create `AuthService` with methods: `login()`, `logout()`, `refreshToken()`, `isAuthenticated()`, `getCurrentUser()`. Manage token storage and retrieval. Check token expiration. Provide observables for authentication state changes."
+  },
+  {
+    "title": "SB-183: Create auth guard for protected routes",
+    "labels": ["frontend", "authentication", "P0", "S"],
+    "body": "Create route guard (`CanActivate` guard) to protect routes. Check if user is authenticated. Redirect to login if not authenticated. Store attempted URL for redirect after login. Apply guard to all protected routes."
+  },
+  {
+    "title": "SB-184: Implement token refresh logic",
+    "labels": ["frontend", "authentication", "P0", "M"],
+    "body": "Intercept 401 Unauthorized responses in HTTP interceptor. Attempt to refresh token via Keycloak. Retry failed request with new token. Handle refresh failures (redirect to login). Implement token refresh before expiration (proactive refresh)."
+  },
+  {
+    "title": "SB-185: Create dashboard component",
+    "labels": ["frontend", "dashboard", "P0", "L"],
+    "body": "Create dashboard component with layout. Call `GET /api/dashboard` API on component initialization. Display balance card, budget utilization chart/list, upcoming payments list, recent transactions list. Handle loading and error states. Refresh data periodically or on user action."
+  },
+  {
+    "title": "SB-186: Implement balance display card",
+    "labels": ["frontend", "dashboard", "P0", "S"],
+    "body": "Create card component showing current balance. Format balance as currency (PLN) with proper decimal places. Display with appropriate styling (positive/negative colors). Show balance update date/time. Make card visually prominent on dashboard."
+  },
+  {
+    "title": "SB-187: Implement budget utilization chart/list",
+    "labels": ["frontend", "dashboard", "budget", "P0", "M"],
+    "body": "Display budget categories with progress bars showing spent vs limit. Show percentage used. Highlight over-budget categories (red color, warning icon). Use chart library (e.g., Chart.js, ng2-charts) or custom progress bars. Make categories clickable to view details."
+  },
+  {
+    "title": "SB-188: Implement upcoming payments list",
+    "labels": ["frontend", "dashboard", "recurring-expenses", "P0", "M"],
+    "body": "Display list of recurring expenses due in next 7 days. Show amount, description, category, due date. Include \"Mark as Paid\" button for each payment. Update list when payment is marked as paid. Show empty state if no upcoming payments."
+  },
+  {
+    "title": "SB-189: Implement recent transactions list",
+    "labels": ["frontend", "dashboard", "transactions", "P0", "S"],
+    "body": "Display last 5 transactions in a list/table. Show date, amount, description, category. Include savings icon for savings transactions. Link to full transaction list. Format amounts with proper styling (positive/negative colors)."
+  },
+  {
+    "title": "SB-190: Create transaction list page",
+    "labels": ["frontend", "transactions", "P0", "M"],
+    "body": "Create page with table/list of all user transactions. Implement pagination. Display columns: date, amount, description, category. Add sorting by date (default descending). Link to transaction details if needed. Handle empty state."
+  },
+  {
+    "title": "SB-191: Implement transaction filtering UI",
+    "labels": ["frontend", "transactions", "P0", "M"],
+    "body": "Create filtering UI with: date range picker (from/to dates), category multi-select dropdown, search input field. Apply filters on user action (button click or auto-apply). Show active filters. Clear filters button. Update transaction list based on filters."
+  },
+  {
+    "title": "SB-192: Create CSV upload component",
+    "labels": ["frontend", "transactions", "CSV", "P0", "M"],
+    "body": "Create file upload component with drag-and-drop support. Accept CSV files only. Show file selection, file name, file size. Display upload progress indicator. Show import results (success count, error count, error details). Handle upload errors gracefully."
+  },
+  {
+    "title": "SB-193: Create manual transaction form",
+    "labels": ["frontend", "transactions", "P0", "M"],
+    "body": "Create form component with fields: date (date picker), amount (number input), description (text input), category (dropdown). Add form validation (required fields, amount format). Submit to `POST /api/transactions` API. Show success/error messages. Reset form on success."
+  },
+  {
+    "title": "SB-194: Implement ATM withdrawal flow UI",
+    "labels": ["frontend", "transactions", "ATM", "P0", "L"],
+    "body": "Detect ATM transactions in transaction list (show special indicator). Create split dialog/modal for ATM transactions. Allow user to split withdrawal into multiple transactions with different categories and amounts. Validate total equals withdrawal amount. Submit split via `POST /api/transactions/{id}/atm-split` API. Update transaction list after split."
+  },
+  {
+    "title": "SB-195: Create budget generation page",
+    "labels": ["frontend", "budget", "AI", "P0", "L"],
+    "body": "Create page with button to generate AI budget proposal. Show loading state during AI generation. Display generated proposal with categories and limits in editable table/form. Show sanity-check warnings for categories with >30% deviation. Allow user to edit limits before saving."
+  },
+  {
+    "title": "SB-196: Implement budget editing form",
+    "labels": ["frontend", "budget", "P0", "L"],
+    "body": "Create editable form/table for budget items. Allow editing category limits. Add/remove categories. Validate total budget. Save changes via `PUT /api/budgets/{id}` API. Show save confirmation. Handle validation errors. Display budget status (DRAFT, APPROVED, etc.)."
+  },
+  {
+    "title": "SB-197: Implement sanity-check warning UI",
+    "labels": ["frontend", "budget", "AI", "P0", "M"],
+    "body": "Display warning banner/modal for categories with >30% deviation from 3-month median. Show deviation percentage and median value. Require user confirmation before saving budget with flagged categories. Allow user to proceed or adjust limits. Make warnings visually prominent."
+  },
+  {
+    "title": "SB-198: Create budget monitoring view",
+    "labels": ["frontend", "budget", "P0", "M"],
+    "body": "Create page to view active budget with utilization. Display budget period, status. Show category utilization with progress bars. Highlight over-budget categories with alerts. Show historical budgets if available. Link to budget editing page."
+  },
+  {
+    "title": "SB-199: Create recurring expenses list page",
+    "labels": ["frontend", "recurring-expenses", "P0", "M"],
+    "body": "Create page listing all user's recurring expenses. Display: amount, description, category, frequency, next payment date. Add \"Add New\" button. Include edit and delete actions for each expense. Show empty state if no recurring expenses."
+  },
+  {
+    "title": "SB-200: Create add/edit recurring expense form",
+    "labels": ["frontend", "recurring-expenses", "P0", "M"],
+    "body": "Create form with fields: amount, description, category (dropdown), frequency (MONTHLY/WEEKLY radio or dropdown). Validate required fields and amount format. Submit to `POST /api/recurring-expenses` or `PUT /api/recurring-expenses/{id}`. Show success/error messages."
+  },
+  {
+    "title": "SB-201: Implement \"Mark as Paid\" action",
+    "labels": ["frontend", "recurring-expenses", "P0", "S"],
+    "body": "Add \"Mark as Paid\" button to recurring expense items (in list and dashboard). Call `POST /api/recurring-expenses/{id}/mark-paid` API on click. Update UI to show new next payment date. Show success confirmation. Handle errors."
+  },
+  {
+    "title": "SB-202: Implement web push subscription",
+    "labels": ["frontend", "notifications", "P0", "L"],
+    "body": "Request notification permission from user. Subscribe to web push service. Send subscription to backend API for storage. Handle subscription events (granted, denied, error). Store subscription in browser. Handle subscription expiration and renewal."
+  },
+  {
+    "title": "SB-203: Create notification preferences page",
+    "labels": ["frontend", "notifications", "P0", "M"],
+    "body": "Create settings page with toggle switches for: email notifications, web push notifications, global enable/disable. Load current preferences from `GET /api/notification-preferences`. Save changes via `PUT /api/notification-preferences`. Show save confirmation."
+  },
+  {
+    "title": "SB-204: Display notification toast/alert",
+    "labels": ["frontend", "notifications", "P0", "S"],
+    "body": "Create toast/notification component to display incoming notifications. Show notifications for budget alerts and payment reminders. Display notification message, type, timestamp. Auto-dismiss after few seconds or allow manual dismiss. Use Angular Material Snackbar or custom component."
+  },
+  {
+    "title": "SB-205: Configure Service Worker",
+    "labels": ["frontend", "PWA", "P1", "M"],
+    "body": "Set up Angular Service Worker using `@angular/service-worker`. Configure caching strategies for static assets, API calls, and images. Implement offline support. Handle service worker updates. Register service worker in app module."
+  },
+  {
+    "title": "SB-206: Implement IndexedDB for offline storage",
+    "labels": ["frontend", "PWA", "P1", "L"],
+    "body": "Use IndexedDB library (e.g., `idb`) to store transactions, budgets, categories locally. Implement sync logic to upload local changes when online. Handle conflicts between local and server data. Show offline indicator when disconnected. Sync on app startup if online."
+  },
+  {
+    "title": "SB-207: Add PWA manifest",
+    "labels": ["frontend", "PWA", "P1", "S"],
+    "body": "Create `manifest.json` file with app metadata. Configure app name, short name, description. Add app icons (multiple sizes for different devices). Set theme colors, background color, display mode (standalone). Link manifest in `index.html`."
+  },
+  {
+    "title": "SB-208: Add integration tests for transaction module",
+    "labels": ["backend", "testing", "P1", "M"],
+    "body": "Write integration tests using Testcontainers for PostgreSQL. Test CRUD operations: create, read, update, delete transactions. Test filtering (date range, categories, search). Test CSV import functionality. Test ATM split functionality. Use `@SpringBootTest` with test database."
+  },
+  {
+    "title": "SB-209: Add integration tests for budget module",
+    "labels": ["backend", "testing", "budget", "P1", "M"],
+    "body": "Write integration tests for budget functionality. Test budget creation, update, approval workflow. Test budget utilization calculation. Test 3-month median calculation. Test budget item management. Use Testcontainers for database."
+  },
+  {
+    "title": "SB-210: Add unit tests for business logic",
+    "labels": ["backend", "testing", "P1", "M"],
+    "body": "Write unit tests for business logic: budget calculation algorithms, categorization logic, ATM split logic, date calculations for recurring expenses. Mock dependencies. Aim for >80% code coverage on service layer. Use JUnit 5 and Mockito."
+  },
+  {
+    "title": "SB-211: Increase test coverage to ≥60%",
+    "labels": ["backend", "testing", "P1", "L"],
+    "body": "Add tests for all service layers, controllers, and repositories. Use code coverage tools (JaCoCo) to measure coverage. Focus on critical paths and business logic. Add tests for error handling. Achieve minimum 60% overall code coverage."
+  },
+  {
+    "title": "SB-212: Set up Angular testing framework",
+    "labels": ["frontend", "testing", "P1", "S"],
+    "body": "Configure Jasmine/Karma for unit testing. Set up test utilities and helpers. Configure test environment. Create test fixtures and mocks. Set up code coverage reporting. Configure test scripts in `package.json`."
+  },
+  {
+    "title": "SB-213: Add component unit tests",
+    "labels": ["frontend", "testing", "P1", "L"],
+    "body": "Write unit tests for all major components: dashboard, transactions, budget, recurring expenses. Test component initialization, user interactions, API calls (mocked), error handling. Use Angular Testing Utilities. Aim for >70% component coverage."
+  },
+  {
+    "title": "SB-214: Add E2E tests with Cypress/Playwright",
+    "labels": ["frontend", "testing", "E2E", "P1", "XL"],
+    "body": "Set up Cypress or Playwright for end-to-end testing. Create E2E tests for critical flows: login, CSV import, budget generation, dashboard view, transaction filtering, recurring expense management. Test full user journeys. Run E2E tests in CI/CD pipeline."
+  }
+]
+

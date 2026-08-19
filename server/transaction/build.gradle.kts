@@ -1,6 +1,6 @@
 plugins {
   java
-  id("org.springframework.boot") version "3.5.6" apply false
+  id("org.springframework.boot") version "4.0.1" apply false
   id("io.spring.dependency-management") version "1.1.7"
 }
 
@@ -23,9 +23,20 @@ dependencyManagement {
 dependencies {
   implementation("org.springframework.boot:spring-boot")
   implementation("org.springframework.boot:spring-boot-starter-web")
+  implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+  runtimeOnly("org.postgresql:postgresql")
+
+  //    annotation processors
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
+  implementation("org.mapstruct:mapstruct:1.6.3")
+  annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
+
+  //    test
   testImplementation("org.springframework.boot:spring-boot-starter-test")
+  testImplementation("org.springframework.boot:spring-boot-testcontainers")
+  testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+  testImplementation("org.testcontainers:testcontainers-postgresql")
   testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

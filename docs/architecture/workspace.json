@@ -1,0 +1,371 @@
+{
+  "configuration" : {
+    "scope" : "SoftwareSystem"
+  },
+  "description" : "Aplikacja do zarządzania budżetem domowym - wersja MVP zgodna z PRD.",
+  "documentation" : { },
+  "id" : 1,
+  "lastModifiedAgent" : "structurizr-ui",
+  "lastModifiedDate" : "2026-01-02T13:51:41Z",
+  "model" : {
+    "people" : [ {
+      "description" : "Osoba korzystająca z aplikacji webowej, która importuje pliki CSV z transakcjami i śledzi swoje limity budżetowe.",
+      "id" : "1",
+      "name" : "User",
+      "properties" : {
+        "structurizr.dsl.identifier" : "user"
+      },
+      "relationships" : [ {
+        "description" : "Korzysta przez przeglądarkę",
+        "destinationId" : "6",
+        "id" : "10",
+        "sourceId" : "1",
+        "tags" : "Relationship",
+        "technology" : "HTTPS"
+      }, {
+        "description" : "Korzysta przez przeglądarkę",
+        "destinationId" : "5",
+        "id" : "11",
+        "linkedRelationshipId" : "10",
+        "sourceId" : "1",
+        "technology" : "HTTPS"
+      } ],
+      "tags" : "Element,Person"
+    } ],
+    "softwareSystems" : [ {
+      "description" : "Zewnętrzny serwer uwierzytelniania OpenID Connect, wydaje podpisane tokeny JWT.",
+      "documentation" : { },
+      "id" : "2",
+      "name" : "Keycloak",
+      "properties" : {
+        "structurizr.dsl.identifier" : "keycloak"
+      },
+      "tags" : "Element,Software System,External"
+    }, {
+      "description" : "LLM generujący propozycje budżetu na podstawie historii transakcji i sezonowości.",
+      "documentation" : { },
+      "id" : "3",
+      "name" : "OpenAI GPT-4o",
+      "properties" : {
+        "structurizr.dsl.identifier" : "gpt"
+      },
+      "tags" : "Element,Software System,External"
+    }, {
+      "description" : "Zewnętrzny serwis do wysyłania powiadomień email (Amazon SES lub Mailpit).",
+      "documentation" : { },
+      "id" : "4",
+      "name" : "Email Service",
+      "properties" : {
+        "structurizr.dsl.identifier" : "emailService"
+      },
+      "tags" : "Element,Software System,External"
+    }, {
+      "containers" : [ {
+        "description" : "Aplikacja uruchamiana w przeglądarce. Autoryzuje się tokenem JWT, komunikuje się z backend przez API Gateway.",
+        "documentation" : { },
+        "id" : "6",
+        "name" : "Frontend Angular",
+        "properties" : {
+          "structurizr.dsl.identifier" : "webApp"
+        },
+        "relationships" : [ {
+          "description" : "OAuth flow - redirect do logowania",
+          "destinationId" : "2",
+          "id" : "12",
+          "sourceId" : "6",
+          "tags" : "Relationship",
+          "technology" : "HTTPS (OpenID Connect)"
+        }, {
+          "description" : "Wysyła żądania API (token JWT)",
+          "destinationId" : "7",
+          "id" : "14",
+          "sourceId" : "6",
+          "tags" : "Relationship",
+          "technology" : "HTTPS/JSON"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "Angular 18, Standalone Components, Signals"
+      }, {
+        "description" : "Jedyny publiczny punkt wejścia HTTP. Weryfikuje tokeny JWT, routing do modułów backend, rate limiting.",
+        "documentation" : { },
+        "id" : "7",
+        "name" : "API Gateway",
+        "properties" : {
+          "structurizr.dsl.identifier" : "gateway"
+        },
+        "relationships" : [ {
+          "description" : "Waliduje podpis tokenu",
+          "destinationId" : "2",
+          "id" : "15",
+          "sourceId" : "7",
+          "tags" : "Relationship",
+          "technology" : "OIDC Discovery (HTTPS)"
+        }, {
+          "description" : "Trasuje żądania do modułów",
+          "destinationId" : "8",
+          "id" : "16",
+          "sourceId" : "7",
+          "tags" : "Relationship",
+          "technology" : "HTTP"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "Spring Cloud Gateway 4.x"
+      }, {
+        "description" : "Modularny monolit zawierający: Transaction Module (import CSV, CRUD, ATM-flow), Budget Module (limity, AI-generowanie, wydatki cykliczne), Notification Module (preferencje, wysyłka alertów).",
+        "documentation" : { },
+        "id" : "8",
+        "name" : "Backend Application",
+        "properties" : {
+          "structurizr.dsl.identifier" : "backend"
+        },
+        "relationships" : [ {
+          "description" : "Czyta i zapisuje transakcje, budżety, preferencje",
+          "destinationId" : "9",
+          "id" : "17",
+          "sourceId" : "8",
+          "tags" : "Relationship",
+          "technology" : "JDBC/SQL (5432)"
+        }, {
+          "description" : "Wysyła zapytania o propozycje budżetu (cache 24h)",
+          "destinationId" : "3",
+          "id" : "18",
+          "sourceId" : "8",
+          "tags" : "Relationship",
+          "technology" : "HTTPS/OpenAI API"
+        }, {
+          "description" : "Wysyła powiadomienia email",
+          "destinationId" : "4",
+          "id" : "20",
+          "sourceId" : "8",
+          "tags" : "Relationship",
+          "technology" : "SMTP/HTTPS"
+        }, {
+          "description" : "Wysyła powiadomienia web push",
+          "destinationId" : "6",
+          "id" : "22",
+          "sourceId" : "8",
+          "tags" : "Relationship",
+          "technology" : "Web Push API (VAPID)"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "Spring Boot 3.4, Kotlin 2.2.20, Spring Modulith 1.4.x"
+      }, {
+        "description" : "Jedna baza danych z osobnymi schematami: transactions (wszystkie transakcje), budgets (limity, wydatki cykliczne, preferencje powiadomień).",
+        "documentation" : { },
+        "id" : "9",
+        "name" : "PostgreSQL Database",
+        "properties" : {
+          "structurizr.dsl.identifier" : "database"
+        },
+        "tags" : "Element,Container",
+        "technology" : "PostgreSQL 16"
+      } ],
+      "description" : "Modularny monolit umożliwiający import transakcji, obliczanie budżetu, zarządzanie wydatkami cyklicznymi i wysyłanie powiadomień.",
+      "documentation" : { },
+      "id" : "5",
+      "name" : "Budget System",
+      "properties" : {
+        "structurizr.dsl.identifier" : "system"
+      },
+      "relationships" : [ {
+        "description" : "OAuth flow - redirect do logowania",
+        "destinationId" : "2",
+        "id" : "13",
+        "linkedRelationshipId" : "12",
+        "sourceId" : "5",
+        "technology" : "HTTPS (OpenID Connect)"
+      }, {
+        "description" : "Wysyła zapytania o propozycje budżetu (cache 24h)",
+        "destinationId" : "3",
+        "id" : "19",
+        "linkedRelationshipId" : "18",
+        "sourceId" : "5",
+        "technology" : "HTTPS/OpenAI API"
+      }, {
+        "description" : "Wysyła powiadomienia email",
+        "destinationId" : "4",
+        "id" : "21",
+        "linkedRelationshipId" : "20",
+        "sourceId" : "5",
+        "technology" : "SMTP/HTTPS"
+      } ],
+      "tags" : "Element,Software System"
+    } ]
+  },
+  "name" : "Budget System – C4 (MVP)",
+  "properties" : {
+    "structurizr.inspection.info" : "0",
+    "structurizr.inspection.ignore" : "0",
+    "structurizr.inspection.error" : "2",
+    "structurizr.inspection.warning" : "0",
+    "structurizr.dsl" : "d29ya3NwYWNlIHsKCiAgICBuYW1lICJCdWRnZXQgU3lzdGVtIOKAkyBDNCAoTVZQKSIKICAgIGRlc2NyaXB0aW9uICJBcGxpa2FjamEgZG8gemFyesSFZHphbmlhIGJ1ZMW8ZXRlbSBkb21vd3ltIC0gd2Vyc2phIE1WUCB6Z29kbmEgeiBQUkQuIgoKICAgICMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwogICAgIyAgICAgICAgICAgICAgICAgICAgICAgTU9ERUwgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAjCiAgICAjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKICAgIG1vZGVsIHsKCiAgICAgICAgdXNlciA9IHBlcnNvbiAiVXNlciIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiT3NvYmEga29yenlzdGFqxIVjYSB6IGFwbGlrYWNqaSB3ZWJvd2VqLCBrdMOzcmEgaW1wb3J0dWplIHBsaWtpIENTViB6IHRyYW5zYWtjamFtaSBpIMWbbGVkemkgc3dvamUgbGltaXR5IGJ1ZMW8ZXRvd2UuIgogICAgICAgIH0KCiAgICAgICAga2V5Y2xvYWsgPSBzb2Z0d2FyZVN5c3RlbSAiS2V5Y2xvYWsiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlpld27EmXRyem55IHNlcndlciB1d2llcnp5dGVsbmlhbmlhIE9wZW5JRCBDb25uZWN0LCB3eWRhamUgcG9kcGlzYW5lIHRva2VueSBKV1QuIgogICAgICAgICAgICB0YWdzICJFeHRlcm5hbCIKICAgICAgICB9CgogICAgICAgIGdwdCA9IHNvZnR3YXJlU3lzdGVtICJPcGVuQUkgR1BULTRvIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJMTE0gZ2VuZXJ1asSFY3kgcHJvcG96eWNqZSBidWTFvGV0dSBuYSBwb2RzdGF3aWUgaGlzdG9yaWkgdHJhbnNha2NqaSBpIHNlem9ub3dvxZtjaS4iCiAgICAgICAgICAgIHRhZ3MgIkV4dGVybmFsIgogICAgICAgIH0KCiAgICAgICAgZW1haWxTZXJ2aWNlID0gc29mdHdhcmVTeXN0ZW0gIkVtYWlsIFNlcnZpY2UiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlpld27EmXRyem55IHNlcndpcyBkbyB3eXN5xYJhbmlhIHBvd2lhZG9taWXFhCBlbWFpbCAoQW1hem9uIFNFUyBsdWIgTWFpbHBpdCkuIgogICAgICAgICAgICB0YWdzICJFeHRlcm5hbCIKICAgICAgICB9CgogICAgICAgIHN5c3RlbSA9IHNvZnR3YXJlU3lzdGVtICJCdWRnZXQgU3lzdGVtIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJNb2R1bGFybnkgbW9ub2xpdCB1bW/FvGxpd2lhasSFY3kgaW1wb3J0IHRyYW5zYWtjamksIG9ibGljemFuaWUgYnVkxbxldHUsIHphcnrEhWR6YW5pZSB3eWRhdGthbWkgY3lrbGljem55bWkgaSB3eXN5xYJhbmllIHBvd2lhZG9taWXFhC4iCgogICAgICAgICAgICB3ZWJBcHAgPSBjb250YWluZXIgIkZyb250ZW5kIEFuZ3VsYXIiIHsKICAgICAgICAgICAgICAgIHRlY2hub2xvZ3kgIkFuZ3VsYXIgMTgsIFN0YW5kYWxvbmUgQ29tcG9uZW50cywgU2lnbmFscyIKICAgICAgICAgICAgICAgIGRlc2NyaXB0aW9uICJBcGxpa2FjamEgdXJ1Y2hhbWlhbmEgdyBwcnplZ2zEhWRhcmNlLiBBdXRvcnl6dWplIHNpxJkgdG9rZW5lbSBKV1QsIGtvbXVuaWt1amUgc2nEmSB6IGJhY2tlbmQgcHJ6ZXogQVBJIEdhdGV3YXkuIgogICAgICAgICAgICB9CgogICAgICAgICAgICBnYXRld2F5ID0gY29udGFpbmVyICJBUEkgR2F0ZXdheSIgewogICAgICAgICAgICAgICAgdGVjaG5vbG9neSAiU3ByaW5nIENsb3VkIEdhdGV3YXkgNC54IgogICAgICAgICAgICAgICAgZGVzY3JpcHRpb24gIkplZHlueSBwdWJsaWN6bnkgcHVua3Qgd2VqxZtjaWEgSFRUUC4gV2VyeWZpa3VqZSB0b2tlbnkgSldULCByb3V0aW5nIGRvIG1vZHXFgsOzdyBiYWNrZW5kLCByYXRlIGxpbWl0aW5nLiIKICAgICAgICAgICAgfQoKICAgICAgICAgICAgYmFja2VuZCA9IGNvbnRhaW5lciAiQmFja2VuZCBBcHBsaWNhdGlvbiIgewogICAgICAgICAgICAgICAgdGVjaG5vbG9neSAiU3ByaW5nIEJvb3QgMy40LCBLb3RsaW4gMi4yLjIwLCBTcHJpbmcgTW9kdWxpdGggMS40LngiCiAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbiAiTW9kdWxhcm55IG1vbm9saXQgemF3aWVyYWrEhWN5OiBUcmFuc2FjdGlvbiBNb2R1bGUgKGltcG9ydCBDU1YsIENSVUQsIEFUTS1mbG93KSwgQnVkZ2V0IE1vZHVsZSAobGltaXR5LCBBSS1nZW5lcm93YW5pZSwgd3lkYXRraSBjeWtsaWN6bmUpLCBOb3RpZmljYXRpb24gTW9kdWxlIChwcmVmZXJlbmNqZSwgd3lzecWCa2EgYWxlcnTDs3cpLiIKICAgICAgICAgICAgfQoKICAgICAgICAgICAgZGF0YWJhc2UgPSBjb250YWluZXIgIlBvc3RncmVTUUwgRGF0YWJhc2UiIHsKICAgICAgICAgICAgICAgIHRlY2hub2xvZ3kgIlBvc3RncmVTUUwgMTYiCiAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbiAiSmVkbmEgYmF6YSBkYW55Y2ggeiBvc29ibnltaSBzY2hlbWF0YW1pOiB0cmFuc2FjdGlvbnMgKHdzenlzdGtpZSB0cmFuc2FrY2plKSwgYnVkZ2V0cyAobGltaXR5LCB3eWRhdGtpIGN5a2xpY3puZSwgcHJlZmVyZW5jamUgcG93aWFkb21pZcWEKS4iCiAgICAgICAgICAgIH0KCiAgICAgICAgICAgICMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCiAgICAgICAgICAgICMgICAgICAgICAgICAgICAgUkVMQUNKRSBXRVdOxIRUUlogU1lTVEVNVSAgICAgICAgICAgICAgIwogICAgICAgICAgICAjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwoKICAgICAgICAgICAgIyBVc2VyIGludGVyYWN0aW9ucwogICAgICAgICAgICB1c2VyIC0+IHdlYkFwcCAiS29yenlzdGEgcHJ6ZXogcHJ6ZWdsxIVkYXJrxJkiICJIVFRQUyIKICAgICAgICAgICAgd2ViQXBwIC0+IGtleWNsb2FrICJPQXV0aCBmbG93IC0gcmVkaXJlY3QgZG8gbG9nb3dhbmlhIiAiSFRUUFMgKE9wZW5JRCBDb25uZWN0KSIKCiAgICAgICAgICAgICMgRnJvbnRlbmQgdG8gR2F0ZXdheQogICAgICAgICAgICB3ZWJBcHAgLT4gZ2F0ZXdheSAiV3lzecWCYSDFvMSFZGFuaWEgQVBJICh0b2tlbiBKV1QpIiAiSFRUUFMvSlNPTiIKCiAgICAgICAgICAgICMgR2F0ZXdheQogICAgICAgICAgICBnYXRld2F5IC0+IGtleWNsb2FrICJXYWxpZHVqZSBwb2RwaXMgdG9rZW51IiAiT0lEQyBEaXNjb3ZlcnkgKEhUVFBTKSIKICAgICAgICAgICAgZ2F0ZXdheSAtPiBiYWNrZW5kICJUcmFzdWplIMW8xIVkYW5pYSBkbyBtb2R1xYLDs3ciICJIVFRQIgoKICAgICAgICAgICAgIyBCYWNrZW5kIGRlcGVuZGVuY2llcwogICAgICAgICAgICBiYWNrZW5kIC0+IGRhdGFiYXNlICJDenl0YSBpIHphcGlzdWplIHRyYW5zYWtjamUsIGJ1ZMW8ZXR5LCBwcmVmZXJlbmNqZSIgIkpEQkMvU1FMICg1NDMyKSIKICAgICAgICAgICAgYmFja2VuZCAtPiBncHQgIld5c3nFgmEgemFweXRhbmlhIG8gcHJvcG96eWNqZSBidWTFvGV0dSAoY2FjaGUgMjRoKSIgIkhUVFBTL09wZW5BSSBBUEkiCiAgICAgICAgICAgIGJhY2tlbmQgLT4gZW1haWxTZXJ2aWNlICJXeXN5xYJhIHBvd2lhZG9taWVuaWEgZW1haWwiICJTTVRQL0hUVFBTIgogICAgICAgICAgICBiYWNrZW5kIC0+IHdlYkFwcCAiV3lzecWCYSBwb3dpYWRvbWllbmlhIHdlYiBwdXNoIiAiV2ViIFB1c2ggQVBJIChWQVBJRCkiCiAgICAgICAgfQogICAgfQoKICAgICMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwogICAgIyAgICAgICAgICAgICAgICAgICAgICAgVklFV1MgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAjCiAgICAjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKICAgIHZpZXdzIHsKCiAgICAgICAgc3lzdGVtQ29udGV4dCBzeXN0ZW0gImNvbnRleHQiIHsKICAgICAgICAgICAgaW5jbHVkZSAqCiAgICAgICAgICAgIGF1dG9sYXlvdXQgbHIKICAgICAgICAgICAgdGl0bGUgIkJ1ZGdldCBTeXN0ZW0g4oCTIEtvbnRla3N0IChNVlApIgogICAgICAgICAgICBkZXNjcmlwdGlvbiAiVcW8eXRrb3duaWsgYXV0b3J5enVqZSBzacSZIHByemV6IEtleWNsb2FrLCBhcGxpa2FjamEgaW1wb3J0dWplIGRhbmUsIGdlbmVydWplIGJ1ZMW8ZXQgeiBwb21vY8SFIEFJIGkgd3lzecWCYSBwb3dpYWRvbWllbmlhLiIKICAgICAgICB9CgogICAgICAgIGNvbnRhaW5lciBzeXN0ZW0gImNvbnRhaW5lcnMiIHsKICAgICAgICAgICAgaW5jbHVkZSAqCiAgICAgICAgICAgIGF1dG9sYXlvdXQgdGIKICAgICAgICAgICAgdGl0bGUgIkJ1ZGdldCBTeXN0ZW0g4oCTIERpYWdyYW0ga29udGVuZXLDs3cgKE1WUCkiCiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJNb2R1bGFybnkgbW9ub2xpdCB6IGplZG7EhSBiYXrEhSBQb3N0Z3JlU1FMLCBmcm9udGVuZCBBbmd1bGFyIGkgQVBJIEdhdGV3YXkgd2VyeWZpa3VqxIVjeSBKV1QuIgogICAgICAgIH0KCiAgICAgICAgc3R5bGVzIHsKICAgICAgICAgICAgZWxlbWVudCAiUGVyc29uIiB7CiAgICAgICAgICAgICAgICBzaGFwZSAicGVyc29uIgogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAiIzA4NDI3YiIKICAgICAgICAgICAgICAgIGNvbG9yICIjZmZmZmZmIgogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIkNvbnRhaW5lciIgewogICAgICAgICAgICAgICAgc2hhcGUgInJvdW5kZWRib3giCiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kICIjNDM4ZGQ1IgogICAgICAgICAgICAgICAgY29sb3IgIiNmZmZmZmYiCiAgICAgICAgICAgIH0KICAgICAgICAgICAgZWxlbWVudCAiU29mdHdhcmVTeXN0ZW0iIHsKICAgICAgICAgICAgICAgIHNoYXBlICJoZXhhZ29uIgogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAiIzg1MmEwZiIKICAgICAgICAgICAgICAgIGNvbG9yICIjZmZmZmZmIgogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIkV4dGVybmFsIiB7CiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kICIjNmIyYzkxIgogICAgICAgICAgICAgICAgY29sb3IgIiNmZmZmZmYiCiAgICAgICAgICAgIH0KICAgICAgICB9CgogICAgICAgIHRoZW1lIGRlZmF1bHQKICAgIH0KCiAgICBjb25maWd1cmF0aW9uIHsKICAgICAgICBzY29wZSBzb2Z0d2FyZXN5c3RlbQogICAgfQoKfQ=="
+  },
+  "views" : {
+    "configuration" : {
+      "branding" : { },
+      "lastSavedView" : "containers",
+      "metadataSymbols" : "SquareBrackets",
+      "styles" : {
+        "elements" : [ {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
+          "shape" : "RoundedBox",
+          "tag" : "Container"
+        }, {
+          "background" : "#6b2c91",
+          "color" : "#ffffff",
+          "tag" : "External"
+        }, {
+          "background" : "#08427b",
+          "color" : "#ffffff",
+          "shape" : "Person",
+          "tag" : "Person"
+        }, {
+          "background" : "#852a0f",
+          "color" : "#ffffff",
+          "shape" : "Hexagon",
+          "tag" : "SoftwareSystem"
+        } ]
+      },
+      "terminology" : { },
+      "themes" : [ "https://static.structurizr.com/themes/default/theme.json" ]
+    },
+    "containerViews" : [ {
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 300,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "description" : "Modularny monolit z jedną bazą PostgreSQL, frontend Angular i API Gateway weryfikujący JWT.",
+      "dimensions" : {
+        "height" : 3299,
+        "width" : 2498
+      },
+      "elements" : [ {
+        "id" : "1",
+        "x" : 465,
+        "y" : 143
+      }, {
+        "id" : "2",
+        "x" : 1119,
+        "y" : 2043
+      }, {
+        "id" : "3",
+        "x" : 1098,
+        "y" : 2643
+      }, {
+        "id" : "4",
+        "x" : 1848,
+        "y" : 2643
+      }, {
+        "id" : "6",
+        "x" : 440,
+        "y" : 843
+      }, {
+        "id" : "7",
+        "x" : 440,
+        "y" : 1443
+      }, {
+        "id" : "8",
+        "x" : 369,
+        "y" : 2043
+      }, {
+        "id" : "9",
+        "x" : 348,
+        "y" : 2643
+      } ],
+      "externalSoftwareSystemBoundariesVisible" : false,
+      "key" : "containers",
+      "name" : "Container View: Budget System",
+      "order" : 2,
+      "relationships" : [ {
+        "id" : "10"
+      }, {
+        "id" : "12",
+        "vertices" : [ {
+          "x" : 1040,
+          "y" : 1443
+        } ]
+      }, {
+        "id" : "14"
+      }, {
+        "id" : "15"
+      }, {
+        "id" : "16"
+      }, {
+        "id" : "17"
+      }, {
+        "id" : "18"
+      }, {
+        "id" : "20"
+      }, {
+        "id" : "22",
+        "vertices" : [ {
+          "x" : 290,
+          "y" : 1743
+        }, {
+          "x" : 290,
+          "y" : 1443
+        } ]
+      } ],
+      "softwareSystemId" : "5",
+      "title" : "Budget System – Diagram kontenerów (MVP)"
+    } ],
+    "systemContextViews" : [ {
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 300,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "description" : "Użytkownik autoryzuje się przez Keycloak, aplikacja importuje dane, generuje budżet z pomocą AI i wysyła powiadomienia.",
+      "dimensions" : {
+        "height" : 1900,
+        "width" : 2300
+      },
+      "elements" : [ {
+        "id" : "1",
+        "x" : 199,
+        "y" : 692
+      }, {
+        "id" : "2",
+        "x" : 1649,
+        "y" : 142
+      }, {
+        "id" : "3",
+        "x" : 1649,
+        "y" : 742
+      }, {
+        "id" : "4",
+        "x" : 1649,
+        "y" : 1342
+      }, {
+        "id" : "5",
+        "x" : 899,
+        "y" : 742
+      } ],
+      "enterpriseBoundaryVisible" : true,
+      "key" : "context",
+      "name" : "System Context View: Budget System",
+      "order" : 1,
+      "relationships" : [ {
+        "id" : "11"
+      }, {
+        "id" : "13"
+      }, {
+        "id" : "19"
+      }, {
+        "id" : "21"
+      } ],
+      "softwareSystemId" : "5",
+      "title" : "Budget System – Kontekst (MVP)"
+    } ]
+  }
+}
