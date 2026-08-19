@@ -19,7 +19,14 @@ Acceptance boundaries:
 - Ownership is derived from a trusted authentication/security context.
 - A client-provided `userId` must not establish ownership.
 - Accessing another owner's records must not expose or modify those records.
-- The exact authentication mechanism is an implementation decision awaiting confirmation.
+- Real authentication is part of MVP acceptance; a development-only identity adapter is insufficient.
+- Keycloak shall authenticate Owners through OIDC and issue access tokens for the Smart Budget API.
+- Smart Budget shall operate as an OAuth2 resource server and validate token signature, issuer, audience, and lifetime.
+- Owner identity shall be derived from the trusted issuer and subject claims; email shall not be used as the stable ownership key.
+- Keycloak-specific types and claim mapping shall remain outside the domain model so another standards-compliant provider can replace it.
+- Authentication failures shall return `401`; authenticated requests lacking permission shall not reveal another Owner's data.
+- The reproducible MVP environment shall provide two preconfigured Owners for authentication and isolation demonstrations.
+- Public self-registration is `FUTURE` and shall remain disabled for the MVP.
 
 ### FR-002: Create a category — MVP
 
@@ -29,7 +36,12 @@ Acceptance boundaries:
 
 - A category belongs to exactly one owner.
 - Invalid or blank names are rejected.
-- Category-name uniqueness, renaming, and deletion policies remain `OPEN`.
+- Category names are trimmed and must be unique per Owner using a case-insensitive comparison.
+- Attempts to create a duplicate normalized name for the same Owner are rejected.
+- Different Owners may use the same Category name.
+- Renaming preserves the Category's identity and all existing Expense and Monthly limit associations; the new name follows the same normalization and uniqueness rules.
+- Whether renaming is delivered in the first milestone remains `OPEN`.
+- Deletion policy remains `OPEN`.
 
 ### FR-003: Configure a monthly category limit — MVP
 
@@ -88,7 +100,7 @@ The implementation shall include automated tests for domain rules, the first end
 
 ### NFR-004: API contracts — MVP
 
-The API shall expose consistent validation errors and document the first product flow. The exact endpoint shape and OpenAPI publication details will be finalized during implementation.
+The API shall expose consistent validation errors and publish OpenAPI documentation for the complete first product flow. The exact endpoint shape will be finalized during implementation. A dedicated frontend is not required for the first milestone.
 
 ### NFR-005: Maintainability — MVP
 
@@ -100,7 +112,7 @@ README, diagrams, and product documentation shall label current implementation, 
 
 ## Deferred capabilities
 
-CSV import, AI proposals, recurring expenses, notifications, a dedicated frontend, cloud deployment, asynchronous messaging, and microservice extraction are `FUTURE`. They do not justify extra infrastructure in the first milestone.
+Public self-registration, CSV import, AI proposals, recurring expenses, notifications, a dedicated frontend, cloud deployment, asynchronous messaging, and microservice extraction are `FUTURE`. They do not justify extra infrastructure in the first milestone.
 
 ## References
 

@@ -16,8 +16,8 @@ Source: open issues in `jasokolowska/smart-budget`, inspected on 2026-08-18. The
 | Issue | Existing concern | Recommendation | Reason / proposed direction |
 | --- | --- | --- | --- |
 | [#46](https://github.com/jasokolowska/smart-budget/issues/46) | Setup and repository hygiene | REWRITE | Scope to one repository, Gradle, documentation consistency, and the modular-monolith baseline. |
-| [#49](https://github.com/jasokolowska/smart-budget/issues/49) | Compose: two databases, RabbitMQ, Keycloak, Mailpit | REWRITE | Initial local stack should contain one PostgreSQL instance; other services require separate justification. |
-| [#51](https://github.com/jasokolowska/smart-budget/issues/51) | Keycloak realm, OIDC client, SPA scopes | DEFER | Select the smallest owner-authentication approach before committing to Keycloak and an SPA. |
+| [#49](https://github.com/jasokolowska/smart-budget/issues/49) | Compose: two databases, RabbitMQ, Keycloak, Mailpit | REWRITE | Initial local infrastructure should contain the Smart Budget PostgreSQL database and Keycloak; remove the second application database, RabbitMQ, and Mailpit. |
+| [#51](https://github.com/jasokolowska/smart-budget/issues/51) | Keycloak realm, OIDC client, SPA scopes | REWRITE | Configure the smallest reproducible realm, API client, and two demonstration Owners needed for OIDC and OpenAPI authorization. Keep public self-registration disabled and remove assumptions about a dedicated SPA. |
 | [#52](https://github.com/jasokolowska/smart-budget/issues/52) | API Gateway epic | REPLACE | The first architecture has no independent API Gateway. |
 | [#53](https://github.com/jasokolowska/smart-budget/issues/53) | Gateway routes to services | REPLACE | There are no separately deployed services to route to. |
 | [#54](https://github.com/jasokolowska/smart-budget/issues/54) | Gateway proxy and cache for OpenAI | REPLACE | Neither a gateway nor AI integration belongs to the first milestone. |
@@ -37,7 +37,7 @@ Source: open issues in `jasokolowska/smart-budget`, inspected on 2026-08-18. The
 | [#68](https://github.com/jasokolowska/smart-budget/issues/68) | Web push and VAPID | DEFER | Dedicated frontend/push infrastructure is out of scope. |
 | [#69](https://github.com/jasokolowska/smart-budget/issues/69) | Full Angular frontend epic | DEFER | Decide on a dedicated frontend only after the backend workflow is demonstrable. |
 | [#70](https://github.com/jasokolowska/smart-budget/issues/70) | Angular application skeleton | DEFER | Not needed to verify a backend-first MVP. |
-| [#71](https://github.com/jasokolowska/smart-budget/issues/71) | SPA Keycloak integration | DEFER | Depends on a future frontend and a confirmed identity-provider choice. |
+| [#71](https://github.com/jasokolowska/smart-budget/issues/71) | SPA Keycloak integration | DEFER | Keycloak is selected for the MVP API, but SPA login integration depends on a future dedicated frontend. |
 | [#72](https://github.com/jasokolowska/smart-budget/issues/72) | Frontend CSV upload | DEFER | Depends on both a dedicated frontend and CSV import. |
 | [#73](https://github.com/jasokolowska/smart-budget/issues/73) | Frontend transaction list | DEFER | Revisit after deciding whether a dedicated frontend is required. |
 | [#74](https://github.com/jasokolowska/smart-budget/issues/74) | Frontend AI budgeting view | DEFER | Both AI and a dedicated frontend are outside the first milestone. |
@@ -46,7 +46,7 @@ Source: open issues in `jasokolowska/smart-budget`, inspected on 2026-08-18. The
 | [#77](https://github.com/jasokolowska/smart-budget/issues/77) | Frontend notification settings | DEFER | Notifications and frontend work are not MVP requirements. |
 | [#78](https://github.com/jasokolowska/smart-budget/issues/78) | GitHub Actions build and tests | KEEP | Existing Gradle CI remains useful; review precise gaps before making a separate CI change. |
 | [#79](https://github.com/jasokolowska/smart-budget/issues/79) | Build and publish Docker images | DEFER | Container publishing follows a working application, not documentation cleanup. |
-| [#80](https://github.com/jasokolowska/smart-budget/issues/80) | Testcontainers for Postgres, RabbitMQ, Mailpit, Keycloak | REWRITE | Start with PostgreSQL and cross-owner integration scenarios; add other containers only when required. |
+| [#80](https://github.com/jasokolowska/smart-budget/issues/80) | Testcontainers for Postgres, RabbitMQ, Mailpit, Keycloak | REWRITE | Cover PostgreSQL persistence, JWT validation, and cross-owner isolation. Add a Keycloak-backed smoke test only where it proves realm/client integration; remove RabbitMQ and Mailpit. |
 | [#81](https://github.com/jasokolowska/smart-budget/issues/81) | Prometheus, OpenTelemetry, and observability | DEFER | Useful after the first product flow and deployment requirements exist. |
 | [#82](https://github.com/jasokolowska/smart-budget/issues/82) | OpenAPI for all services | REWRITE | Document one application API and the first budgeting workflow. |
 | [#83](https://github.com/jasokolowska/smart-budget/issues/83) | Legacy HP-001 through HP-016 acceptance scenarios | REWRITE | Replace with the five current owner/category/limit/expense/summary stories. |

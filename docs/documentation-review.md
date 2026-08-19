@@ -23,21 +23,23 @@ Produce one consistent, owner-approved product and architecture baseline before 
 ### Round 1: Product boundary
 
 - What makes the first usable version valuable to the owner?
-- Is category -> monthly limit -> expense -> monthly summary sufficient?
-- Is an OpenAPI-driven demonstration enough before a frontend exists?
+- Confirmed: category -> monthly limit -> expense -> monthly summary is the complete first milestone.
+- Confirmed: the documented OpenAPI is sufficient to demonstrate it; a dedicated frontend is not required.
 - Which deferred features must remain visible as future ideas without contaminating MVP scope?
 
 ### Round 2: Ownership and security
 
 - What identifies a budget owner?
 - Which owner-isolation cases must be demonstrated and tested?
-- Is an initial development identity adapter acceptable before choosing an OIDC provider?
+- Confirmed: real authentication is required for the first milestone; a development-only identity adapter is insufficient.
+- Confirmed: Keycloak authenticates Owners through OIDC; Smart Budget validates JWT access tokens as an OAuth2 resource server.
+- Confirmed: two preconfigured Owners support the MVP demonstration; public self-registration is deferred.
 - Which security behavior is required before any public deployment?
 
 ### Round 3: Category lifecycle
 
-- Are names unique per owner? Is uniqueness case-insensitive?
-- What happens if a used category is renamed?
+- Confirmed: Category names are trimmed and unique per Owner using a case-insensitive comparison.
+- Confirmed: renaming a used Category preserves its identity and existing associations; the new name follows the existing normalization and uniqueness rules.
 - Can a category be deleted when limits or expenses reference it?
 
 ### Round 4: Monthly planning and expenses

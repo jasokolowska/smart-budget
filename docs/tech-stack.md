@@ -27,9 +27,10 @@ The current `main` does not yet establish a Kotlin-first application, a Spring M
 | Database | One PostgreSQL database | Sufficient for a single deployable application and the initial domain model. |
 | Schema migrations | Flyway | One selected migration tool; Liquibase is not a parallel option. |
 | Persistence | Spring Data JPA initially | Prefer one clear persistence approach before considering jOOQ for a demonstrated reporting need. |
-| API | REST plus OpenAPI documentation | Enables an understandable, demonstrable backend-first product flow. |
+| API | REST plus published OpenAPI documentation | Provides the demonstrable interface for the complete first milestone without requiring a dedicated frontend. |
 | Validation | Jakarta Bean Validation | Provides consistent request validation. |
-| Security | Spring Security with owner identity derived from a trusted principal | Protects per-owner financial data. |
+| Authentication | Keycloak using OIDC with two preconfigured demonstration Owners | Provides real, reproducible MVP authentication without making Smart Budget responsible for credential storage or public registration. |
+| API security | Spring Security OAuth2 Resource Server with JWT validation | Validates signature, issuer, audience, and token lifetime and derives Owner identity from issuer plus subject. |
 | Tests | JUnit 5, focused domain tests, integration tests, Testcontainers for PostgreSQL | Verifies business rules, persistence, and owner isolation. |
 | Local development | Docker Compose when persistence is introduced | Provides one local PostgreSQL instance without a distributed stack. |
 | Continuous integration | Existing GitHub Actions workflow, adjusted only in a separate implementation task | Keeps build/test feedback visible without expanding this documentation branch. |
@@ -37,7 +38,8 @@ The current `main` does not yet establish a Kotlin-first application, a Spring M
 ## Decisions deliberately deferred
 
 - Spring Boot/Kotlin/Spring Modulith version upgrades and compatibility verification.
-- Keycloak versus another suitable OIDC provider.
+- Production hosting and operational hardening of Keycloak, including availability, backup, email verification, MFA, and account recovery.
+- Public self-registration. Amazon Cognito may be evaluated as an OIDC-compatible alternative only when an AWS deployment is explicitly selected.
 - Angular or any other dedicated frontend framework.
 - CSV libraries, AI integrations, or an LLM provider.
 - jOOQ, Kotest, Mailpit, Redis, RabbitMQ, Kafka, SQS, and EventBridge.

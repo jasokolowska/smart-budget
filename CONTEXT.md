@@ -19,6 +19,10 @@ The project optimizes for understandable trade-offs and a completed vertical sli
 - One deployable application, modular monolith first.
 - Java 21 remains the runtime baseline; Kotlin is the target implementation language.
 - The first complete workflow is category -> monthly limit -> expense -> monthly summary.
+- The first milestone is demonstrated through the documented OpenAPI; a dedicated frontend is not required.
+- The first milestone includes real authentication; a development-only identity adapter is not sufficient for MVP acceptance.
+- Keycloak authenticates Owners for the first milestone through OIDC; Smart Budget validates access tokens and remains portable to another standards-compliant provider.
+- The MVP demonstration uses two preconfigured Owners. Public self-registration is deferred.
 - Every persisted business object belongs to exactly one authenticated owner.
 - Client-supplied identifiers must never determine who owns a record.
 
@@ -26,8 +30,8 @@ The project optimizes for understandable trade-offs and a completed vertical sli
 
 | Term | Meaning | Important distinction |
 | --- | --- | --- |
-| Owner | The authenticated person whose budget data is being accessed. | An owner is resolved from a trusted identity context, not from a request body. |
-| Category | An owner-specific label used to group expenses. | A category is not a separately deployed service. |
+| Owner | The authenticated person whose budget data is being accessed. | An Owner is resolved from the trusted token issuer and subject, not from email or a request body. |
+| Category | An Owner-specific, named classification used to group expenses. | Its name is unique per Owner after trimming surrounding whitespace and comparing case-insensitively. Renaming preserves the Category's identity and existing associations. A Category is not a separately deployed service. |
 | Budget month | A calendar month for which spending is planned and summarized. | Month boundaries and timezone details still require owner confirmation. |
 | Monthly limit | The maximum planned spending for one category in one budget month. | A limit is a planning amount, not necessarily a rule that blocks expenses. |
 | Expense | A recorded spending entry belonging to one owner and assigned to one category. | The first milestone covers expenses; income, transfers, imports, and recurring payments are future capabilities. |
@@ -49,8 +53,8 @@ Potential cross-module direction: `budgeting` and `transactions` consult the pub
 
 ## Open decisions for the owner
 
-1. Is a category unique per owner after trimming whitespace and ignoring case?
-2. What happens when a category is renamed or deleted after being used?
+1. Is Category renaming included in the first milestone?
+2. What happens when a Category is deleted after being used?
 3. Is a budget month created explicitly or when its first monthly limit is configured?
 4. Can a category have at most one monthly limit per owner and month?
 5. Are expense amounts always stored as positive values in the first milestone?
@@ -58,8 +62,6 @@ Potential cross-module direction: `budgeting` and `transactions` consult the pub
 7. Should overspending be allowed, rejected, or shown as a negative remaining amount?
 8. Which date and timezone define a budget month?
 9. Are expense edits and deletions included in the first slice?
-10. What is the smallest acceptable authentication approach for an owner-isolated API?
-11. Is OpenAPI/Swagger sufficient as the first demonstrable interface?
-12. Should `categories` be an independent module or part of `budgeting`?
+10. Should `categories` be an independent module or part of `budgeting`?
 
 Do not silently convert any answer above into an implementation requirement before discussing it with the owner.

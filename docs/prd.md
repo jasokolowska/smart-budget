@@ -30,7 +30,9 @@ The first milestone is complete when one authenticated owner can:
 4. Retrieve the category's monthly limit, total spending, and remaining amount.
 5. Access only their own categories, limits, expenses, and summaries.
 
-An API documented with OpenAPI may be sufficient for this milestone; a dedicated frontend is not automatically required.
+The documented OpenAPI is the demonstrable interface for this milestone. A dedicated frontend is not required.
+The milestone includes real authentication and must not rely on a development-only identity adapter. Keycloak authenticates Owners through OIDC. Smart Budget validates issued access tokens and keeps provider-specific details outside the domain model.
+Two preconfigured Owners are provided for the MVP demonstration. Public self-registration is outside the first milestone.
 
 ## Explicitly outside the first milestone
 
@@ -40,6 +42,7 @@ An API documented with OpenAPI may be sufficient for this milestone; a dedicated
 - Recurring expenses, scheduled jobs, reminders, email, and web push.
 - Angular or another dedicated frontend, offline support, and PWA features.
 - Shared budgets, multiple currencies, exports, analytics, and advanced dashboards.
+- Public self-registration and account-lifecycle flows beyond the preconfigured demonstration Owners.
 - AWS deployment, Terraform, message brokers, API Gateway, and microservices.
 
 These ideas remain possible future extensions. Their exclusion is a scope decision, not a claim that they are permanently undesirable.
@@ -58,8 +61,10 @@ These ideas remain possible future extensions. Their exclusion is a scope decisi
 The first milestone succeeds when:
 
 - The complete category -> limit -> expense -> summary scenario can be demonstrated through documented API calls.
+- The complete workflow can be explored through the published OpenAPI without a dedicated frontend.
 - Calculations are correct for the selected owner, category, and month.
 - Automated tests prove that one owner cannot read or modify another owner's data.
+- Real authentication establishes the Owner identity used by every protected operation.
 - Architectural boundaries are understandable and verified once Spring Modulith is introduced.
 - The repository clearly distinguishes working functionality from planned capabilities.
 

@@ -2,6 +2,11 @@
 
 Status: **draft for owner review**. These stories describe product behavior, not API gateways, brokers, or independently deployed services.
 
+The first milestone is demonstrated through the documented OpenAPI. A dedicated frontend is not part of its acceptance criteria.
+
+Real authentication through Keycloak OIDC is part of the first milestone. All stories operate on the Owner established from a validated access token.
+The demonstration uses two preconfigured Owners; public self-registration is deferred.
+
 ## US-001: Create a personal expense category
 
 **As** an authenticated budget owner, **I want** to create an expense category, **so that** I can group related spending.
@@ -12,8 +17,13 @@ Acceptance criteria:
 2. Blank or invalid names are rejected.
 3. The new category appears only in that owner's category list.
 4. Another owner cannot access or modify it.
+5. Surrounding whitespace is removed from the name.
+6. The same Owner cannot create two Categories whose trimmed names differ only by letter case.
+7. Different Owners may use the same Category name.
 
-Open questions: normalized uniqueness, renaming, and deletion rules.
+Confirmed lifecycle rule: renaming preserves the Category's identity and existing associations, and the new name follows the same normalization and uniqueness rules.
+
+Open questions: whether renaming is included in the first milestone and the Category deletion rule.
 
 ## US-002: Set a monthly spending limit
 
@@ -63,6 +73,7 @@ Acceptance criteria:
 2. Requests referencing another owner's category, expense, or budget do not reveal protected data.
 3. The application does not trust a client-provided owner identifier.
 4. Automated integration tests cover at least one cross-owner scenario for each implemented capability.
+5. Requests without a valid access token are rejected with `401`.
 
 ## End-to-end acceptance scenario
 
@@ -76,4 +87,4 @@ An expense belonging to owner B or a different budget month does not alter owner
 
 ## Deferred story themes
 
-Future story themes may include CSV imports, recurring payments, AI suggestions, reminders, a dedicated frontend, cloud deployment, and more advanced reporting. They are not acceptance criteria for US-001 through US-005.
+Future story themes may include public self-registration, CSV imports, recurring payments, AI suggestions, reminders, a dedicated frontend, cloud deployment, and more advanced reporting. They are not acceptance criteria for US-001 through US-005.

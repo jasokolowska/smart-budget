@@ -12,6 +12,7 @@ Smart Budget is a personal-finance backend and portfolio project focused on deli
 | Build | Gradle Kotlin DSL, Java 21, `app` and `transaction` subprojects | One deployable application with explicit domain-module boundaries |
 | Architecture | Partially implemented structure and inconsistent legacy documentation | Modular monolith supported by Spring Modulith |
 | Persistence | Not established consistently on `main` | PostgreSQL with Flyway migrations |
+| Authentication | Not implemented | Keycloak OIDC with Smart Budget as an OAuth2 resource server |
 | Quality | Gradle build and GitHub Actions workflow | Domain tests, integration tests, and module-boundary verification |
 
 Do not interpret an architectural target as functionality that already exists.

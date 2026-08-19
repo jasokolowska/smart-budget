@@ -2,6 +2,7 @@ workspace "Smart Budget - Target Modular Monolith" "Target architecture for the 
 
     model {
         owner = person "Budget Owner" "An authenticated person who manages personal categories, monthly limits, and expenses."
+        identityProvider = softwareSystem "Keycloak" "Authenticates Owners and issues OIDC access tokens for the Smart Budget API." "External Identity Provider"
 
         smartBudget = softwareSystem "Smart Budget" "A personal-budgeting application implemented as one modular monolith." {
             application = container "Smart Budget Application" "One deployable backend exposing the budgeting API." "Kotlin, Spring Boot, Spring Modulith" {
@@ -16,6 +17,8 @@ workspace "Smart Budget - Target Modular Monolith" "Target architecture for the 
             }
 
             owner -> application "Creates categories and limits, records expenses, and reads monthly summaries" "HTTPS / JSON"
+            owner -> identityProvider "Authenticates"
+            application -> identityProvider "Discovers OIDC metadata and signing keys" "OIDC / HTTPS"
             application -> database "Reads and writes owner-scoped application data" "SQL"
 
             budgeting -> categories "Validates owner-owned categories through the public module API"
