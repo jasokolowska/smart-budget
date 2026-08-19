@@ -8,8 +8,8 @@ Smart Budget is a personal-budgeting application and public engineering portfoli
 
 | Area | Verified on `main` | Approved direction |
 | --- | --- | --- |
-| Runtime and build | Java 21, Gradle Kotlin DSL, `app` and `transaction` subprojects | Java 21, Kotlin-first Spring Boot application |
-| Architecture | Incomplete early-stage backend | One deployable modular monolith with `categories`, `budget`, and `expenses` modules |
+| Runtime and build | Java 21, Kotlin 2.2, Gradle Kotlin DSL, and one `app` subproject | Add the M1 product capabilities to the Kotlin-first Spring Boot application |
+| Architecture | One deployable application with verified `categories`, `budget`, and `expenses` Spring Modulith boundaries | Implement each module through its explicit public API |
 | Persistence | Not consistently established on `main` | One PostgreSQL database, Flyway, and module-owned tables |
 | Authentication | Not yet implemented on `main` | Keycloak OIDC, Spring Security OAuth2 Resource Server, and two demo users |
 | Quality | Existing Gradle build and GitHub Actions workflow | Unit, integration, owner-isolation, and Spring Modulith architecture tests |
@@ -64,7 +64,7 @@ See the full [delivery roadmap](docs/roadmap.md) for scope, dependencies, accept
 - [Agent instructions](AGENTS.md)
 - [Historical microservice-era material](docs/archive/2025-microservices/README.md)
 
-## Existing build
+## Build
 
 Run commands from `server/` with the existing wrapper:
 
@@ -74,7 +74,7 @@ Run commands from `server/` with the existing wrapper:
 ./gradlew :app:bootRun
 ```
 
-On Windows use `gradlew.bat`. These commands describe the current baseline; they do not claim that the approved target architecture is already implemented.
+On Windows use `gradlew.bat`. The build verifies the three logical application modules; it does not yet claim that the approved M1 product behavior is implemented.
 
 ## Working agreements
 

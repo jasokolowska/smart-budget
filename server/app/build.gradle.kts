@@ -1,8 +1,7 @@
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
-  java
-  id("org.springframework.boot") version "3.5.6"
+  kotlin("jvm") version "2.2.21"
+  kotlin("plugin.spring") version "2.2.21"
+  id("org.springframework.boot") version "4.1.0"
   id("io.spring.dependency-management") version "1.1.7"
 }
 
@@ -10,16 +9,22 @@ group = "com.sokolowska"
 
 version = "0.0.1-SNAPSHOT"
 
-description = "Application Entry Point"
+description = "Smart Budget modular monolith"
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+kotlin { jvmToolchain(21) }
 
 repositories { mavenCentral() }
 
+dependencyManagement {
+  imports { mavenBom("org.springframework.modulith:spring-modulith-bom:2.1.0") }
+}
+
 dependencies {
-  implementation(project(":transaction"))
   implementation("org.springframework.boot:spring-boot-starter")
+  implementation("org.springframework.modulith:spring-modulith-core")
+  implementation(kotlin("reflect"))
   testImplementation("org.springframework.boot:spring-boot-starter-test")
+  testImplementation("org.springframework.modulith:spring-modulith-starter-test")
   testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -2,18 +2,20 @@
 
 Status: **approved technical direction**. Distinguish verified existing implementation from future target capabilities.
 
-## Verified baseline on `main`
+## Verified implementation baseline
 
 | Technology or structure | Existing evidence | Status |
 | --- | --- | --- |
-| Java 21 | Gradle Java toolchain in existing subprojects | Present |
+| Java 21 | Kotlin JVM toolchain in the application subproject | Present |
+| Kotlin 2.2 | Kotlin JVM and Spring plugins in `app` | Present |
 | Spring Boot | Existing Gradle plugin configuration | Present |
 | Gradle Kotlin DSL | `build.gradle.kts` and `settings.gradle.kts` | Present |
-| `app` and `transaction` Gradle subprojects | Existing `server/settings.gradle.kts` | Present |
+| Single deployable `app` Gradle subproject | `server/settings.gradle.kts` and the Spring Boot entry point | Present |
+| Spring Modulith boundaries | Architecture test discovers and verifies `categories`, `budget`, and `expenses` | Present |
 | GitHub Actions Gradle build | Existing workflow | Present |
 | Spotless configuration | Existing Gradle configuration | Present |
 
-A Kotlin-first application, the accepted Spring Modulith boundaries, complete PostgreSQL/Flyway persistence, Keycloak security, and the full budgeting workflow are targets until implemented and verified.
+Complete PostgreSQL/Flyway persistence, Keycloak security, and the full budgeting workflow remain targets until implemented and verified.
 
 ## M1 target stack
 
