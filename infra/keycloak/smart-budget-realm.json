@@ -22,6 +22,9 @@
         "http://localhost:8080"
       ],
       "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
       "protocolMappers": [
         {
           "name": "smart-budget-api audience",
