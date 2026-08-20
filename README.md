@@ -137,6 +137,18 @@ $tokenResponse = Invoke-RestMethod `
 $tokenResponse.access_token
 ```
 
+Verify the complete local realm contract without printing or saving tokens:
+
+```powershell
+.\infra\keycloak\verify-realm.ps1
+```
+
+The verification checks OIDC discovery and JWKS availability, authenticates both
+demo owners, and confirms the expected issuer, API audience, usernames, and distinct
+stable subject identifiers. If `.env` overrides the demo passwords, export matching
+`DEMO_OWNER_ONE_PASSWORD` and `DEMO_OWNER_TWO_PASSWORD` environment variables before
+running the script.
+
 If `.env` overrides a demo password, use the overridden value in the request. Realm
 import is intentionally idempotent and does not replace an existing realm. To reset
 all local PostgreSQL and Keycloak state and re-import the realm, run
