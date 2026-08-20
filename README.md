@@ -76,6 +76,76 @@ Run commands from `server/` with the existing wrapper:
 
 On Windows use `gradlew.bat`. The build verifies the three logical application modules; it does not yet claim that the approved M1 product behavior is implemented.
 
+## Local Docker Compose environment
+
+The local stack contains one Smart Budget application, one PostgreSQL database for
+application data, and Keycloak with a preconfigured `smart-budget` realm. RabbitMQ,
+Mailpit, and additional application databases are not required.
+
+The committed defaults are demonstration values only. To override them, copy the
+sanitized example and keep the resulting `.env` file local:
+
+```bash
+cp .env.example .env
+docker compose up --build --detach
+docker compose ps
+```
+
+On PowerShell, use `Copy-Item .env.example .env` for the first command. The services
+are available at:
+
+- application health: <http://localhost:8080/actuator/health>
+- Keycloak: <http://localhost:8081>
+- PostgreSQL: `localhost:5432`
+
+Keycloak imports two enabled demonstration owners on the first startup:
+
+| Username | Default local password |
+| --- | --- |
+| `owner-one` | `change-me-owner-one` |
+| `owner-two` | `change-me-owner-two` |
+
+Obtain an access token for either owner using the local-only direct grant.
+
+On Bash:
+
+```bash
+curl --fail --request POST \
+  http://localhost:8081/realms/smart-budget/protocol/openid-connect/token \
+  --header "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "client_id=smart-budget-api" \
+  --data-urlencode "grant_type=password" \
+  --data-urlencode "username=owner-one" \
+  --data-urlencode "password=change-me-owner-one"
+```
+
+On Windows PowerShell, `curl` is commonly an alias for `Invoke-WebRequest`, so use
+PowerShell's native request command:
+
+```powershell
+$tokenResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:8081/realms/smart-budget/protocol/openid-connect/token" `
+  -ContentType "application/x-www-form-urlencoded" `
+  -Body @{
+    client_id  = "smart-budget-api"
+    grant_type = "password"
+    username   = "owner-one"
+    password   = "change-me-owner-one"
+  }
+
+$tokenResponse.access_token
+```
+
+If `.env` overrides a demo password, use the overridden value in the request. Realm
+import is intentionally idempotent and does not replace an existing realm. To reset
+all local PostgreSQL and Keycloak state and re-import the realm, run
+`docker compose down --volumes`, then start the stack again. This removes local
+container data.
+
+Stop the stack without removing its data with `docker compose down`. Do not commit
+the generated `.env` file, tokens, or non-demonstration credentials.
+
 ## Working agreements
 
 - Maintain one active repository and one approved product specification.
