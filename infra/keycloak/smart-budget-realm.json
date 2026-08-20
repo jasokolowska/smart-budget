@@ -1,0 +1,77 @@
+{
+  "realm": "smart-budget",
+  "enabled": true,
+  "displayName": "Smart Budget",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "smart-budget-api",
+      "name": "Smart Budget API",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8080/swagger-ui/oauth2-redirect.html"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "smart-budget-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "smart-budget-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "91d77b9f-2c92-4ed0-a2c5-bbea2ea40f3d",
+      "username": "owner-one",
+      "firstName": "Demo",
+      "lastName": "Owner One",
+      "email": "owner-one@example.invalid",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${DEMO_OWNER_ONE_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "24677e70-55ba-42b0-b58d-c4f91b0bd030",
+      "username": "owner-two",
+      "firstName": "Demo",
+      "lastName": "Owner Two",
+      "email": "owner-two@example.invalid",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${DEMO_OWNER_TWO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

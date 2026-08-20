@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+.gradle
+.gradle-user-home
+.kotlin
+**/build
+*.iml
